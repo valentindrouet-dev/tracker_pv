@@ -626,7 +626,7 @@
     function toggleStatus(id, status) {
       const player = players.find(p => p.id === id);
       if (player) {
-        if (!player.statuses) player.statuses = [];
+        if (!Array.isArray(player.statuses)) player.statuses = [];
         const idx = player.statuses.indexOf(status);
         if (idx >= 0) {
           player.statuses.splice(idx, 1);
@@ -656,6 +656,30 @@
         document.getElementById(`sort-${mode}`).className = 'btn-sort active';
       }
       render();
+    }
+
+    function getHealthColor(percent) {
+      if (percent > 50) {
+        return 'linear-gradient(90deg, #10b981, #22c55e)'; // Vert
+      } else if (percent > 25) {
+        return 'linear-gradient(90deg, #eab308, #facc15)'; // Jaune
+      } else if (percent > 10) {
+        return 'linear-gradient(90deg, #f97316, #fb923c)'; // Orange
+      } else {
+        return 'linear-gradient(90deg, #dc2626, #ef4444)'; // Rouge
+      }
+    }
+
+    function getTextColor(percent) {
+      if (percent > 50) {
+        return '#004d26'; // Vert foncé
+      } else if (percent > 25) {
+        return '#713f12'; // Jaune foncé
+      } else if (percent > 10) {
+        return '#7c2d12'; // Orange foncé
+      } else {
+        return '#450a0a'; // Rouge très foncé
+      }
     }
 
     function getSortedPlayers() {
@@ -699,6 +723,7 @@
       content.innerHTML = sorted.map(p => {
         const percent = Math.round((p.hp / p.max) * 100);
         const bgColor = p.hp === 0 ? '#4a0000' : '#0f1419';
+        const barColor = getHealthColor(percent);
         return `
           <div class="player-display">
             <div class="player-header">
@@ -706,7 +731,7 @@
               <div class="player-percent">${percent}%</div>
             </div>
             <div class="hp-bar-container" style="background-color: ${bgColor}">
-              <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: linear-gradient(90deg, ${themeColor}, #29d17b);">
+              <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor};">
                 ${p.hp}
               </div>
             </div>
@@ -723,6 +748,7 @@
       displayArea.innerHTML = sorted.map(p => {
         const percent = Math.round((p.hp / p.max) * 100);
         const bgColor = p.hp === 0 ? '#4a0000' : '#0f1419';
+        const barColor = getHealthColor(percent);
         return `
           <div class="player-display">
             <div class="player-header">
@@ -730,7 +756,7 @@
               <div class="player-percent">${percent}%</div>
             </div>
             <div class="hp-bar-container" style="background-color: ${bgColor}">
-              <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: linear-gradient(90deg, ${themeColor}, #29d17b);">
+              <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor};">
                 ${p.hp}
               </div>
             </div>
@@ -768,10 +794,12 @@
             <div class="edit-row-2">
               <div class="status-row">
                 ${['affaibli', 'ausol', 'feu'].map(status => {
-                  const active = p.statuses?.includes(status);
+                  const active = Array.isArray(p.statuses) && p.statuses.includes(status);
                   const label = status === 'affaibli' ? 'Affaibli' : status === 'ausol' ? 'Au Sol' : 'Feu';
-                  const style = active ? `background-color: ${statusColors[status].bg}; border-color: ${statusColors[status].border}; color: ${statusColors[status].color}` : '';
-                  return `<button onclick="toggleStatus(${p.id}, '${status}')" class="btn-status ${active ? 'active' : 'inactive'}" style="${style}">${label}</button>`;
+                  const colors = statusColors[status];
+                  const className = active ? 'btn-status active' : 'btn-status inactive';
+                  const style = active ? `background-color: ${colors.bg}; border-color: ${colors.border}; color: ${colors.color};` : '';
+                  return `<button onclick="toggleStatus(${p.id}, '${status}')" class="${className}" style="${style}">${label}</button>`;
                 }).join('')}
               </div>
               <div class="hp-buttons">
