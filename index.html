@@ -1,263 +1,459 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tableau des Points de Vie</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/framer-motion/10.16.4/framer-motion.js"></script>
-</head>
-<body>
-  <div id="root"></div>
-  
-  <script type="text/babel">
-    const { useState, useEffect, useMemo, useRef } = React;
-    const { motion, AnimatePresence } = Motion;
+import React, { useEffect, useMemo, useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus, Trash2, Save, RefreshCcw } from "lucide-react";
 
-    // Icônes Lucide
-    const Plus = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-      </svg>
-    );
+// --- Helpers ---------------------------------------------------------------
+const defaultPlayers = [
+  { id: crypto.randomUUID(), name: "Alchimiste", hp: 32, max: 50, color: "#4a6edb", statuses: [] },
+  { id: crypto.randomUUID(), name: "Destructeur", hp: 48, max: 50, color: "#c13b3b", statuses: [] },
+  { id: crypto.randomUUID(), name: "Pyromane", hp: 20, max: 50, color: "#e6a500", statuses: [] },
+  { id: crypto.randomUUID(), name: "Déviant", hp: 24, max: 50, color: "#c07ce6", statuses: [] },
+  { id: crypto.randomUUID(), name: "Lamevent", hp: 28, max: 50, color: "#60a853", statuses: [] },
+];
 
-    const Trash2 = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="3 6 5 6 21 6"></polyline>
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-        <line x1="10" y1="11" x2="10" y2="17"></line>
-        <line x1="14" y1="11" x2="14" y2="17"></line>
-      </svg>
-    );
+const STORAGE_KEY = "pv-tracker-v1";
 
-    const Save = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
-        <polyline points="17 21 17 13 7 13 7 21"></polyline>
-        <polyline points="7 3 7 8 15 8"></polyline>
-      </svg>
-    );
+function loadState() {
+  const data = defaultPlayers;
+  return data.map((p) => {
+    const statuses = Array.isArray(p.statuses) ? p.statuses : [];
+    return { ...p, statuses };
+  });
+}
 
-    const RefreshCcw = ({ size = 24 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="1 4 1 10 7 10"></polyline>
-        <polyline points="23 20 23 14 17 14"></polyline>
-        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path>
-      </svg>
-    );
+function saveState(players) {
+  console.log("Save:", players);
+}
 
-    // Helpers
-    const defaultPlayers = [
-      { id: crypto.randomUUID(), name: "Alchimiste", hp: 32, max: 50, color: "#4a6edb", statuses: [] },
-      { id: crypto.randomUUID(), name: "Destructeur", hp: 48, max: 50, color: "#c13b3b", statuses: [] },
-      { id: crypto.randomUUID(), name: "Pyromane", hp: 20, max: 50, color: "#e6a500", statuses: [] },
-      { id: crypto.randomUUID(), name: "Déviant", hp: 24, max: 50, color: "#c07ce6", statuses: [] },
-      { id: crypto.randomUUID(), name: "Lamevent", hp: 28, max: 50, color: "#60a853", statuses: [] },
-    ];
+const byName = (a, b) => a.name.localeCompare(b.name);
+const byHpDesc = (a, b) => Number(b.hp) - Number(a.hp);
+const byHpAsc = (a, b) => Number(a.hp) - Number(b.hp);
 
-    const STORAGE_KEY = "pv-tracker-v1";
+const STATUS_COLORS = {
+  affaibli: "#64748b",
+  ausol: "#8b5e3c",
+  feu: "#ef4444",
+};
 
-    function loadState() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return defaultPlayers;
-        const data = JSON.parse(raw);
-        if (!Array.isArray(data)) return defaultPlayers;
-        return data.map((p) => {
-          const statuses = Array.isArray(p.statuses) ? p.statuses : p.status ? [p.status] : [];
-          const { status, ...rest } = p;
-          return { statuses, ...rest };
-        });
-      } catch {
-        return defaultPlayers;
-      }
-    }
+const STATUS_KEYS = ["affaibli", "ausol", "feu"];
 
-    function saveState(players) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
-      } catch {}
-    }
+function getGradientForStatuses(statuses, fallback) {
+  const active = STATUS_KEYS.filter((k) => statuses?.includes(k));
+  if (!active.length) return `linear-gradient(90deg, ${fallback}, #29d17b)`;
+  const colors = active.map((k) => STATUS_COLORS[k]);
+  if (colors.length === 1) {
+    return `linear-gradient(90deg, ${colors[0]}, ${colors[0]})`;
+  }
+  const stops = colors.map((c, i) => {
+    const pos = Math.round((i * 100) / (colors.length - 1));
+    return `${c} ${pos}%`;
+  });
+  return `linear-gradient(90deg, ${stops.join(", ")})`;
+}
 
-    const byName = (a, b) => a.name.localeCompare(b.name);
-    const byHpDesc = (a, b) => Number(b.hp) - Number(a.hp);
-    const byHpAsc = (a, b) => Number(a.hp) - Number(b.hp);
+function isLight(hex) {
+  const c = hex.replace("#", "");
+  const r = parseInt(c.substring(0, 2), 16);
+  const g = parseInt(c.substring(2, 4), 16);
+  const b = parseInt(c.substring(4, 6), 16);
+  const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  return l > 160;
+}
 
-    const STATUS_COLORS = {
-      affaibli: "#64748b",
-      ausol: "#8b5e3c",
-      feu: "#ef4444",
+export default function App() {
+  const [players, setPlayers] = useState(loadState);
+  const [themeAccent, setThemeAccent] = useState("#63ff8b");
+  const [flash, setFlash] = useState({});
+  const [sortMode, setSortMode] = useState("none");
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenRef = useRef(null);
+
+  useEffect(() => saveState(players), [players]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key.toLowerCase() === "f") toggleFullscreen();
+      if (e.key === "Escape" && isFullscreen) exitFullscreen();
     };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isFullscreen]);
 
-    const STATUS_KEYS = ["affaibli", "ausol", "feu"];
+  useEffect(() => {
+    const handler = () => {
+      if (!document.fullscreenElement && isFullscreen) setIsFullscreen(false);
+    };
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, [isFullscreen]);
 
-    function getGradientForStatuses(statuses, fallback) {
-      const active = STATUS_KEYS.filter((k) => statuses?.includes(k));
-      if (!active.length) return `linear-gradient(90deg, ${fallback}, #29d17b)`;
-      const colors = active.map((k) => STATUS_COLORS[k]);
-      if (colors.length === 1) {
-        return `linear-gradient(90deg, ${colors[0]}, ${colors[0]})`;
-      }
-      const stops = colors.map((c, i) => {
-        const pos = Math.round((i * 100) / (colors.length - 1));
-        return `${c} ${pos}%`;
-      });
-      return `linear-gradient(90deg, ${stops.join(", ")})`;
+  const totalMax = useMemo(() => players.reduce((s, p) => s + (Number(p.max) || 0), 0), [players]);
+  const totalHP = useMemo(
+    () => players.reduce((s, p) => s + Math.max(0, Math.min(Number(p.hp) || 0, Number(p.max) || 0)), 0),
+    [players]
+  );
+
+  const triggerFlash = (id, dir) => {
+    const token = Date.now() + Math.random();
+    setFlash((prev) => ({ ...prev, [id]: { dir, token } }));
+    setTimeout(() => setFlash((prev) => ({ ...prev, [id]: null })), 240);
+  };
+
+  const addPlayer = () => {
+    setPlayers((p) => [
+      ...p,
+      { id: crypto.randomUUID(), name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", statuses: [] },
+    ]);
+  };
+
+  const removePlayer = (id) => setPlayers((p) => p.filter((x) => x.id !== id));
+
+  const update = (id, patch) => setPlayers((prev) => prev.map((pl) => (pl.id === id ? { ...pl, ...patch } : pl)));
+
+  const changeHP = (id, delta) => {
+    setPlayers((prev) =>
+      prev.map((pl) => {
+        if (pl.id !== id) return pl;
+        const next = Math.max(0, Math.min(pl.max, (Number(pl.hp) || 0) + delta));
+        return { ...pl, hp: next };
+      })
+    );
+    if (delta !== 0) triggerFlash(id, delta > 0 ? "up" : "down");
+  };
+
+  const changeHPAbsolute = (id, value, currentHp, max) => {
+    const clamped = Math.max(0, Math.min(max, value));
+    update(id, { hp: clamped });
+    const diff = clamped - (Number(currentHp) || 0);
+    if (diff) triggerFlash(id, diff > 0 ? "up" : "down");
+  };
+
+  const resetAll = () => setPlayers(loadState());
+
+  const displayPlayers = useMemo(() => {
+    const arr = [...players];
+    switch (sortMode) {
+      case "name":
+        return arr.sort(byName);
+      case "hpdesc":
+        return arr.sort(byHpDesc);
+      case "hpasc":
+        return arr.sort(byHpAsc);
+      default:
+        return arr;
     }
+  }, [players, sortMode]);
 
-    function isLight(hex) {
-      const c = hex.replace("#", "");
-      const r = parseInt(c.substring(0, 2), 16);
-      const g = parseInt(c.substring(2, 4), 16);
-      const b = parseInt(c.substring(4, 6), 16);
-      const l = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      return l > 160;
-    }
+  const toggleStatus = (id, statusKey) => {
+    setPlayers((prev) =>
+      prev.map((pl) => {
+        if (pl.id !== id) return pl;
+        const set = new Set(pl.statuses || []);
+        if (set.has(statusKey)) set.delete(statusKey);
+        else set.add(statusKey);
+        return { ...pl, statuses: Array.from(set) };
+      })
+    );
+  };
 
-    function App() {
-      const [players, setPlayers] = useState(loadState);
-      const [themeAccent, setThemeAccent] = useState("#63ff8b");
-      const [flash, setFlash] = useState({});
-      const [sortMode, setSortMode] = useState("none");
-      const [isFullscreen, setIsFullscreen] = useState(false);
-      const fullscreenRef = useRef(null);
+  const requestNativeFullscreen = async () => {
+    try {
+      const el = fullscreenRef.current || document.documentElement;
+      if (el.requestFullscreen) await el.requestFullscreen();
+    } catch {}
+  };
 
-      useEffect(() => saveState(players), [players]);
+  const exitNativeFullscreen = async () => {
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen();
+    } catch {}
+  };
 
-      useEffect(() => {
-        const onKey = (e) => {
-          if (e.key.toLowerCase() === "f") toggleFullscreen();
-          if (e.key === "Escape" && isFullscreen) exitFullscreen();
-        };
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-      }, [isFullscreen]);
+  const enterFullscreen = async () => {
+    setIsFullscreen(true);
+    await requestNativeFullscreen();
+  };
 
-      useEffect(() => {
-        const handler = () => {
-          if (!document.fullscreenElement && isFullscreen) setIsFullscreen(false);
-        };
-        document.addEventListener("fullscreenchange", handler);
-        return () => document.removeEventListener("fullscreenchange", handler);
-      }, [isFullscreen]);
+  const exitFullscreen = async () => {
+    setIsFullscreen(false);
+    await exitNativeFullscreen();
+  };
 
-      const totalMax = useMemo(() => players.reduce((s, p) => s + (Number(p.max) || 0), 0), [players]);
-      const totalHP = useMemo(
-        () => players.reduce((s, p) => s + Math.max(0, Math.min(Number(p.hp) || 0, Number(p.max) || 0)), 0),
-        [players]
-      );
+  const toggleFullscreen = async () => {
+    if (isFullscreen) await exitFullscreen();
+    else await enterFullscreen();
+  };
 
-      const triggerFlash = (id, dir) => {
-        const token = Date.now() + Math.random();
-        setFlash((prev) => ({ ...prev, [id]: { dir, token } }));
-        setTimeout(() => setFlash((prev) => ({ ...prev, [id]: null })), 240);
-      };
+  return (
+    <div className="min-h-screen w-full text-zinc-100 p-6" style={{ backgroundColor: '#0a0e1a' }}>
+      <div className="max-w-5xl mx-auto" ref={fullscreenRef}>
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight drop-shadow mb-6">Tableau des Points de Vie</h1>
 
-      const addPlayer = () => {
-        setPlayers((p) => [
-          ...p,
-          { id: crypto.randomUUID(), name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", statuses: [] },
-        ]);
-      };
+        {/* --- AFFICHAGE --- */}
+        <div className="bg-[#1a1f2e]/80 p-4 rounded-2xl shadow-lg border border-slate-700/50 space-y-3 mb-2">
+          <div className="flex justify-end mb-2">
+            <button
+              onClick={toggleFullscreen}
+              className="px-3 py-1 rounded-xl bg-[#1a1f2e] hover:bg-[#252b3d] border border-slate-600 text-sm"
+              title="Basculer en plein écran (F)"
+            >
+              Plein écran
+            </button>
+          </div>
+          
+          {displayPlayers.map((p) => {
+            const max = Number(p.max) > 0 ? Number(p.max) : 1;
+            const clamped = Math.max(0, Math.min(Number(p.hp) || 0, max));
+            const percent = Math.round((clamped / max) * 100);
+            const bg = p.statuses && p.statuses.length
+              ? getGradientForStatuses(p.statuses, themeAccent)
+              : `linear-gradient(90deg, ${themeAccent}, #29d17b)`;
+            const f = flash[p.id];
+            return (
+              <div key={p.id}>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-2xl font-extrabold tracking-wide drop-shadow" style={{ color: p.color }}>
+                    {p.name}
+                  </div>
+                  <div className="text-sm text-zinc-400">{percent}%</div>
+                </div>
+                <div className="relative w-full h-10 rounded-xl overflow-hidden border border-emerald-500/20 shadow-inner" style={{ backgroundColor: clamped === 0 ? '#4a0000' : '#0f1419' }}>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${percent}%` }}
+                    transition={{ type: "spring", stiffness: 120, damping: 18 }}
+                    className="h-full flex items-center justify-center font-extrabold text-sm md:text-base"
+                    style={{ background: bg, color: "#004d26", textShadow: "0 0 2px rgba(0,0,0,0.4)" }}
+                  >
+                    {clamped}
+                  </motion.div>
+                  <AnimatePresence>
+                    {f && (
+                      <motion.div
+                        key={f.token}
+                        className="absolute inset-0 pointer-events-none rounded-xl"
+                        style={{ backgroundColor: f.dir === "up" ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)" }}
+                        initial={{ opacity: 0.25 }}
+                        animate={{ opacity: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                      />
+                    )}
+                  </AnimatePresence>
+                  <div
+                    className="absolute inset-0 pointer-events-none opacity-20"
+                    style={{
+                      backgroundImage:
+                        "linear-gradient(45deg,transparent 25%,rgba(255,255,255,.3) 25%,rgba(255,255,255,.3) 50%,transparent 50%,transparent 75%,rgba(255,255,255,.3) 75%,rgba(255,255,255,.3))",
+                      backgroundSize: "20px 20px",
+                    }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+          <div className="flex justify-end gap-2 pt-3">
+            <button 
+              onClick={() => setSortMode("name")} 
+              className={`px-3 py-1 rounded-xl border text-sm transition-all ${
+                sortMode === "name" 
+                  ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/30" 
+                  : "bg-[#1a1f2e] hover:bg-[#252b3d] border-slate-600"
+              }`}
+            >
+              Noms
+            </button>
+            <button 
+              onClick={() => setSortMode("hpdesc")} 
+              className={`px-3 py-1 rounded-xl border text-sm transition-all ${
+                sortMode === "hpdesc" 
+                  ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/30" 
+                  : "bg-[#1a1f2e] hover:bg-[#252b3d] border-slate-600"
+              }`}
+            >
+              PV Max
+            </button>
+            <button 
+              onClick={() => setSortMode("hpasc")} 
+              className={`px-3 py-1 rounded-xl border text-sm transition-all ${
+                sortMode === "hpasc" 
+                  ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/30" 
+                  : "bg-[#1a1f2e] hover:bg-[#252b3d] border-slate-600"
+              }`}
+            >
+              PV Min
+            </button>
+          </div>
+        </div>
 
-      const removePlayer = (id) => setPlayers((p) => p.filter((x) => x.id !== id));
-
-      const update = (id, patch) => setPlayers((prev) => prev.map((pl) => (pl.id === id ? { ...pl, ...patch } : pl)));
-
-      const changeHP = (id, delta) => {
-        setPlayers((prev) =>
-          prev.map((pl) => {
-            if (pl.id !== id) return pl;
-            const next = Math.max(0, Math.min(pl.max, (Number(pl.hp) || 0) + delta));
-            return { ...pl, hp: next };
-          })
-        );
-        if (delta !== 0) triggerFlash(id, delta > 0 ? "up" : "down");
-      };
-
-      const changeHPAbsolute = (id, value, currentHp, max) => {
-        const clamped = Math.max(0, Math.min(max, value));
-        update(id, { hp: clamped });
-        const diff = clamped - (Number(currentHp) || 0);
-        if (diff) triggerFlash(id, diff > 0 ? "up" : "down");
-      };
-
-      const resetAll = () => setPlayers(loadState());
-
-      const displayPlayers = useMemo(() => {
-        const arr = [...players];
-        switch (sortMode) {
-          case "name":
-            return arr.sort(byName);
-          case "hpdesc":
-            return arr.sort(byHpDesc);
-          case "hpasc":
-            return arr.sort(byHpAsc);
-          default:
-            return arr;
-        }
-      }, [players, sortMode]);
-
-      const toggleStatus = (id, statusKey) => {
-        setPlayers((prev) =>
-          prev.map((pl) => {
-            if (pl.id !== id) return pl;
-            const set = new Set(pl.statuses || []);
-            if (set.has(statusKey)) set.delete(statusKey);
-            else set.add(statusKey);
-            return { ...pl, statuses: Array.from(set) };
-          })
-        );
-      };
-
-      const requestNativeFullscreen = async () => {
-        try {
-          const el = fullscreenRef.current || document.documentElement;
-          if (el.requestFullscreen) await el.requestFullscreen();
-        } catch {}
-      };
-
-      const exitNativeFullscreen = async () => {
-        try {
-          if (document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen();
-        } catch {}
-      };
-
-      const enterFullscreen = async () => {
-        setIsFullscreen(true);
-        await requestNativeFullscreen();
-      };
-
-      const exitFullscreen = async () => {
-        setIsFullscreen(false);
-        await exitNativeFullscreen();
-      };
-
-      const toggleFullscreen = async () => {
-        if (isFullscreen) await exitFullscreen();
-        else await enterFullscreen();
-      };
-
-      return (
-        <div className="min-h-screen w-full text-zinc-100 p-6" style={{ backgroundColor: '#0a0e1a' }}>
-          <div className="max-w-5xl mx-auto" ref={fullscreenRef}>
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight drop-shadow mb-6">Tableau des Points de Vie</h1>
-
-            <div className="bg-[#1a1f2e]/80 p-4 rounded-2xl shadow-lg border border-slate-700/50 space-y-3 mb-2">
-              <div className="flex justify-end mb-2">
-                <button
-                  onClick={toggleFullscreen}
-                  className="px-3 py-1 rounded-xl bg-[#1a1f2e] hover:bg-[#252b3d] border border-slate-600 text-sm"
-                  title="Basculer en plein écran (F)"
-                >
-                  Plein écran
-                </button>
+        <h2 className="text-xl font-bold text-zinc-300 mb-3">Édition</h2>
+        <div className="space-y-3 mb-8">
+          {players.map((p) => (
+            <div key={p.id} className="bg-[#1a1f2e]/80 p-3 rounded-xl shadow-lg border border-slate-700/50">
+              <div className="flex items-start gap-3 mb-2">
+                <input
+                  value={p.name}
+                  onChange={(e) => update(p.id, { name: e.target.value })}
+                  className="w-48 px-2 py-1 rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40 text-sm font-bold text-zinc-100"
+                  style={{ backgroundColor: '#0f1419' }}
+                  placeholder="Nom"
+                />
+                <div className="flex items-center gap-2 w-[340px]">
+                  <button
+                    onClick={() => changeHPAbsolute(p.id, 0, p.hp, p.max)}
+                    className="px-2 py-1 text-xs rounded-md bg-red-700/60 hover:bg-red-700/80 border border-red-600 text-red-100 w-[50px]"
+                    title="Mettre à 0 PV"
+                  >
+                    Dead
+                  </button>
+                  <NumInput label="PV" value={p.hp} onChange={(v) => changeHPAbsolute(p.id, v, p.hp, p.max)} />
+                  <span className="text-zinc-500 w-4 text-center">/</span>
+                  <NumInput label="Max" value={p.max} min={1} onChange={(v) => update(p.id, { max: v, hp: Math.min(p.hp, v) })} />
+                  <button
+                    onClick={() => changeHPAbsolute(p.id, p.max, p.hp, p.max)}
+                    className="px-2 py-1 text-xs rounded-md bg-green-700/60 hover:bg-green-700/80 border border-green-600 text-green-100 w-[50px]"
+                    title="Restaurer tous les PV"
+                  >
+                    Full
+                  </button>
+                </div>
+                <input
+                  type="color"
+                  value={p.color}
+                  onChange={(e) => update(p.id, { color: e.target.value })}
+                  className="w-8 h-8 rounded-md border border-slate-600 cursor-pointer ml-auto"
+                  style={{ backgroundColor: '#0f1419' }}
+                  title="Couleur du nom"
+                />
               </div>
               
+              <div className="flex items-center gap-3">
+                <div className="w-48 flex gap-1">
+                  {STATUS_KEYS.map((key) => {
+                    const active = p.statuses?.includes(key);
+                    const c = STATUS_COLORS[key];
+                    const style = active
+                      ? { backgroundColor: c, borderColor: c, color: isLight(c) ? "#111" : "#fff" }
+                      : {};
+                    const label = key === "affaibli" ? "Affaibli" : key === "ausol" ? "Au Sol" : "Feu";
+                    return (
+                      <StateButton
+                        key={key}
+                        active={active}
+                        onClick={() => toggleStatus(p.id, key)}
+                        label={label}
+                        style={style}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="flex items-center gap-1 w-[340px] justify-center">
+                  <button
+                    onClick={() => changeHP(p.id, -10)}
+                    className="px-2 py-1 text-xs rounded-md border bg-red-900/40 hover:bg-red-900/60 border-red-800 text-red-200 w-[42px]"
+                  >
+                    -10
+                  </button>
+                  <button
+                    onClick={() => changeHP(p.id, -5)}
+                    className="px-2 py-1 text-xs rounded-md border bg-red-900/40 hover:bg-red-900/60 border-red-800 text-red-200 w-[36px]"
+                  >
+                    -5
+                  </button>
+                  <button
+                    onClick={() => changeHP(p.id, -1)}
+                    className="px-2 py-1 text-xs rounded-md border bg-red-900/40 hover:bg-red-900/60 border-red-800 text-red-200 w-[32px]"
+                  >
+                    -1
+                  </button>
+                  <span className="text-zinc-500 w-4 text-center">/</span>
+                  <button
+                    onClick={() => changeHP(p.id, +1)}
+                    className="px-2 py-1 text-xs rounded-md border bg-green-900/40 hover:bg-green-900/60 border-green-800 text-green-200 w-[32px]"
+                  >
+                    +1
+                  </button>
+                  <button
+                    onClick={() => changeHP(p.id, +5)}
+                    className="px-2 py-1 text-xs rounded-md border bg-green-900/40 hover:bg-green-900/60 border-green-800 text-green-200 w-[36px]"
+                  >
+                    +5
+                  </button>
+                  <button
+                    onClick={() => changeHP(p.id, +10)}
+                    className="px-2 py-1 text-xs rounded-md border bg-green-900/40 hover:bg-green-900/60 border-green-800 text-green-200 w-[42px]"
+                  >
+                    +10
+                  </button>
+                </div>
+                <button
+                  onClick={() => removePlayer(p.id)}
+                  className="ml-auto px-2 py-1 rounded-lg bg-red-900/40 hover:bg-red-900/60 border border-red-800 text-red-200 flex items-center gap-1 text-xs"
+                  title="Supprimer ce joueur"
+                >
+                  <Trash2 size={12} /> Supprimer
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-3">
+          <Card>
+            <div className="text-sm text-zinc-400 mb-2">Couleur de barre</div>
+            <input type="color" value={themeAccent} onChange={(e) => setThemeAccent(e.target.value)} className="w-full h-10 rounded-md border border-slate-600 cursor-pointer" style={{ backgroundColor: '#0f1419' }} />
+          </Card>
+          <Card>
+            <div className="text-zinc-400 text-sm">PV actuels</div>
+            <div className="text-2xl font-bold">{totalHP}</div>
+          </Card>
+          <Card>
+            <div className="text-zinc-400 text-sm">PV max</div>
+            <div className="text-2xl font-bold">{totalMax}</div>
+          </Card>
+          <Card>
+            <div className="text-zinc-400 text-sm">% global</div>
+            <div className="text-2xl font-bold">{totalMax ? Math.round((totalHP / totalMax) * 100) : 0}%</div>
+          </Card>
+        </div>
+
+        <div className="flex items-center gap-2 mb-6">
+          <button onClick={addPlayer} className="px-3 py-2 rounded-2xl bg-[#1a1f2e] hover:bg-[#252b3d] transition shadow-md flex items-center gap-2 border border-slate-600" title="Ajouter un joueur">
+            <Plus size={18} /> Ajouter
+          </button>
+          <button onClick={() => saveState(players)} className="px-3 py-2 rounded-2xl bg-[#1a1f2e] hover:bg-[#252b3d] transition shadow-md flex items-center gap-2 border border-slate-600" title="Sauvegarder dans le navigateur">
+            <Save size={18} /> Sauver
+          </button>
+          <button onClick={resetAll} className="px-3 py-2 rounded-2xl bg-[#1a1f2e] hover:bg-[#252b3d] transition shadow-md flex items-center gap-2 border border-slate-600" title="Revenir aux valeurs d'exemple">
+            <RefreshCcw size={18} /> Réinitialiser
+          </button>
+        </div>
+
+        <p className="mt-6 text-xs text-zinc-500">Astuce : Raccourcis → <kbd>F</kbd> plein écran, <kbd>Échap</kbd> quitter. Les données sont enregistrées automatiquement dans votre navigateur (localStorage).</p>
+      </div>
+
+      {/* OVERLAY PLEIN ÉCRAN */}
+      <AnimatePresence>
+        {isFullscreen && (
+          <motion.div
+            key="fs"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-50"
+            style={{ backgroundColor: 'rgba(0,0,0,0.95)' }}
+          >
+            <div className="absolute top-4 right-4">
+              <button
+                onClick={toggleFullscreen}
+                className="px-4 py-2 rounded-xl bg-[#1a1f2e] hover:bg-[#252b3d] border border-slate-600 text-sm"
+              >
+                Quitter le plein écran
+              </button>
+            </div>
+
+            <div className="max-w-6xl mx-auto pt-16 px-6 space-y-6">
               {displayPlayers.map((p) => {
                 const max = Number(p.max) > 0 ? Number(p.max) : 1;
                 const clamped = Math.max(0, Math.min(Number(p.hp) || 0, max));
@@ -268,19 +464,19 @@
                 const f = flash[p.id];
                 return (
                   <div key={p.id}>
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="text-2xl font-extrabold tracking-wide drop-shadow" style={{ color: p.color }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-3xl md:text-4xl font-extrabold tracking-wide drop-shadow" style={{ color: p.color }}>
                         {p.name}
                       </div>
-                      <div className="text-sm text-zinc-400">{percent}%</div>
+                      <div className="text-lg text-zinc-300">{percent}%</div>
                     </div>
-                    <div className="relative w-full h-10 rounded-xl overflow-hidden border border-emerald-500/20 shadow-inner" style={{ backgroundColor: clamped === 0 ? '#4a0000' : '#0f1419' }}>
+                    <div className="relative w-full h-16 rounded-2xl overflow-hidden border border-emerald-500/30 shadow-inner" style={{ backgroundColor: clamped === 0 ? '#4a0000' : '#0f1419' }}>
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${percent}%` }}
                         transition={{ type: "spring", stiffness: 120, damping: 18 }}
-                        className="h-full flex items-center justify-center font-extrabold text-sm md:text-base"
-                        style={{ background: bg, color: "#004d26", textShadow: "0 0 2px rgba(0,0,0,0.4)" }}
+                        className="h-full flex items-center justify-center font-extrabold text-xl"
+                        style={{ background: bg, color: "#004d26", textShadow: "0 0 2px rgba(0,0,0,0.5)" }}
                       >
                         {clamped}
                       </motion.div>
@@ -288,7 +484,7 @@
                         {f && (
                           <motion.div
                             key={f.token}
-                            className="absolute inset-0 pointer-events-none rounded-xl"
+                            className="absolute inset-0 pointer-events-none rounded-2xl"
                             style={{ backgroundColor: f.dir === "up" ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)" }}
                             initial={{ opacity: 0.25 }}
                             animate={{ opacity: 0 }}
@@ -298,21 +494,22 @@
                         )}
                       </AnimatePresence>
                       <div
-                        className="absolute inset-0 pointer-events-none opacity-20"
+                        className="absolute inset-0 pointer-events-none opacity-10"
                         style={{
                           backgroundImage:
                             "linear-gradient(45deg,transparent 25%,rgba(255,255,255,.3) 25%,rgba(255,255,255,.3) 50%,transparent 50%,transparent 75%,rgba(255,255,255,.3) 75%,rgba(255,255,255,.3))",
-                          backgroundSize: "20px 20px",
+                          backgroundSize: "28px 28px",
                         }}
                       />
                     </div>
                   </div>
                 );
               })}
-              <div className="flex justify-end gap-2 pt-3">
+
+              <div className="flex justify-end gap-3 pt-2">
                 <button 
                   onClick={() => setSortMode("name")} 
-                  className={`px-3 py-1 rounded-xl border text-sm transition-all ${
+                  className={`px-4 py-2 rounded-xl border text-sm transition-all ${
                     sortMode === "name" 
                       ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/30" 
                       : "bg-[#1a1f2e] hover:bg-[#252b3d] border-slate-600"
@@ -322,7 +519,7 @@
                 </button>
                 <button 
                   onClick={() => setSortMode("hpdesc")} 
-                  className={`px-3 py-1 rounded-xl border text-sm transition-all ${
+                  className={`px-4 py-2 rounded-xl border text-sm transition-all ${
                     sortMode === "hpdesc" 
                       ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/30" 
                       : "bg-[#1a1f2e] hover:bg-[#252b3d] border-slate-600"
@@ -332,7 +529,7 @@
                 </button>
                 <button 
                   onClick={() => setSortMode("hpasc")} 
-                  className={`px-3 py-1 rounded-xl border text-sm transition-all ${
+                  className={`px-4 py-2 rounded-xl border text-sm transition-all ${
                     sortMode === "hpasc" 
                       ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/30" 
                       : "bg-[#1a1f2e] hover:bg-[#252b3d] border-slate-600"
@@ -342,293 +539,35 @@
                 </button>
               </div>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
 
-            <h2 className="text-xl font-bold text-zinc-300 mb-3">Édition</h2>
-            <div className="space-y-3 mb-8">
-              {players.map((p) => (
-                <div key={p.id} className="bg-[#1a1f2e]/80 p-3 rounded-xl shadow-lg border border-slate-700/50">
-                  <div className="flex items-start gap-3 mb-2">
-                    <input
-                      value={p.name}
-                      onChange={(e) => update(p.id, { name: e.target.value })}
-                      className="w-48 px-2 py-1 rounded-lg border border-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40 text-sm font-bold text-zinc-100"
-                      style={{ backgroundColor: '#0f1419' }}
-                      placeholder="Nom"
-                    />
-                    <div className="flex items-center gap-2 w-[340px]">
-                      <button
-                        onClick={() => changeHPAbsolute(p.id, 0, p.hp, p.max)}
-                        className="px-2 py-1 text-xs rounded-md bg-red-700/60 hover:bg-red-700/80 border border-red-600 text-red-100 w-[50px]"
-                        title="Mettre à 0 PV"
-                      >
-                        Dead
-                      </button>
-                      <NumInput label="PV" value={p.hp} onChange={(v) => changeHPAbsolute(p.id, v, p.hp, p.max)} />
-                      <span className="text-zinc-500 w-4 text-center">/</span>
-                      <NumInput label="Max" value={p.max} min={1} onChange={(v) => update(p.id, { max: v, hp: Math.min(p.hp, v) })} />
-                      <button
-                        onClick={() => changeHPAbsolute(p.id, p.max, p.hp, p.max)}
-                        className="px-2 py-1 text-xs rounded-md bg-green-700/60 hover:bg-green-700/80 border border-green-600 text-green-100 w-[50px]"
-                        title="Restaurer tous les PV"
-                      >
-                        Full
-                      </button>
-                    </div>
-                    <input
-                      type="color"
-                      value={p.color}
-                      onChange={(e) => update(p.id, { color: e.target.value })}
-                      className="w-8 h-8 rounded-md border border-slate-600 cursor-pointer ml-auto"
-                      style={{ backgroundColor: '#0f1419' }}
-                      title="Couleur du nom"
-                    />
-                  </div>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="w-48 flex gap-1">
-                      {STATUS_KEYS.map((key) => {
-                        const active = p.statuses?.includes(key);
-                        const c = STATUS_COLORS[key];
-                        const style = active
-                          ? { backgroundColor: c, borderColor: c, color: isLight(c) ? "#111" : "#fff" }
-                          : {};
-                        const label = key === "affaibli" ? "Affaibli" : key === "ausol" ? "Au Sol" : "Feu";
-                        return (
-                          <StateButton
-                            key={key}
-                            active={active}
-                            onClick={() => toggleStatus(p.id, key)}
-                            label={label}
-                            style={style}
-                          />
-                        );
-                      })}
-                    </div>
-                    <div className="flex items-center gap-1 w-[340px] justify-center">
-                      <button
-                        onClick={() => changeHP(p.id, -10)}
-                        className="px-2 py-1 text-xs rounded-md border bg-red-900/40 hover:bg-red-900/60 border-red-800 text-red-200 w-[42px]"
-                      >
-                        -10
-                      </button>
-                      <button
-                        onClick={() => changeHP(p.id, -5)}
-                        className="px-2 py-1 text-xs rounded-md border bg-red-900/40 hover:bg-red-900/60 border-red-800 text-red-200 w-[36px]"
-                      >
-                        -5
-                      </button>
-                      <button
-                        onClick={() => changeHP(p.id, -1)}
-                        className="px-2 py-1 text-xs rounded-md border bg-red-900/40 hover:bg-red-900/60 border-red-800 text-red-200 w-[32px]"
-                      >
-                        -1
-                      </button>
-                      <span className="text-zinc-500 w-4 text-center">/</span>
-                      <button
-                        onClick={() => changeHP(p.id, +1)}
-                        className="px-2 py-1 text-xs rounded-md border bg-green-900/40 hover:bg-green-900/60 border-green-800 text-green-200 w-[32px]"
-                      >
-                        +1
-                      </button>
-                      <button
-                        onClick={() => changeHP(p.id, +5)}
-                        className="px-2 py-1 text-xs rounded-md border bg-green-900/40 hover:bg-green-900/60 border-green-800 text-green-200 w-[36px]"
-                      >
-                        +5
-                      </button>
-                      <button
-                        onClick={() => changeHP(p.id, +10)}
-                        className="px-2 py-1 text-xs rounded-md border bg-green-900/40 hover:bg-green-900/60 border-green-800 text-green-200 w-[42px]"
-                      >
-                        +10
-                      </button>
-                    </div>
-                    <button
-                      onClick={() => removePlayer(p.id)}
-                      className="ml-auto px-2 py-1 rounded-lg bg-red-900/40 hover:bg-red-900/60 border border-red-800 text-red-200 flex items-center gap-1 text-xs"
-                      title="Supprimer ce joueur"
-                    >
-                      <Trash2 size={12} /> Supprimer
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
+function Card({ children }) {
+  return <div className="rounded-2xl bg-[#1a1f2e]/80 border border-slate-700/50 p-4 shadow-lg">{children}</div>;
+}
 
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-4 gap-3">
-              <Card>
-                <div className="text-sm text-zinc-400 mb-2">Couleur de barre</div>
-                <input type="color" value={themeAccent} onChange={(e) => setThemeAccent(e.target.value)} className="w-full h-10 rounded-md border border-slate-600 cursor-pointer" style={{ backgroundColor: '#0f1419' }} />
-              </Card>
-              <Card>
-                <div className="text-zinc-400 text-sm">PV actuels</div>
-                <div className="text-2xl font-bold">{totalHP}</div>
-              </Card>
-              <Card>
-                <div className="text-zinc-400 text-sm">PV max</div>
-                <div className="text-2xl font-bold">{totalMax}</div>
-              </Card>
-              <Card>
-                <div className="text-zinc-400 text-sm">% global</div>
-                <div className="text-2xl font-bold">{totalMax ? Math.round((totalHP / totalMax) * 100) : 0}%</div>
-              </Card>
-            </div>
+function NumInput({ label, value, onChange, min = 0 }) {
+  return (
+    <label className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-600 text-xs" style={{ backgroundColor: '#1a1f2e' }}>
+      <span className="text-zinc-400">{label}</span>
+      <input type="number" className="w-12 bg-transparent focus:outline-none text-zinc-100 text-xs" value={value} min={min} onChange={(e) => onChange(Number(e.target.value))} />
+    </label>
+  );
+}
 
-            <div className="flex items-center gap-2 mb-6">
-              <button onClick={addPlayer} className="px-3 py-2 rounded-2xl bg-[#1a1f2e] hover:bg-[#252b3d] transition shadow-md flex items-center gap-2 border border-slate-600" title="Ajouter un joueur">
-                <Plus size={18} /> Ajouter
-              </button>
-              <button onClick={() => saveState(players)} className="px-3 py-2 rounded-2xl bg-[#1a1f2e] hover:bg-[#252b3d] transition shadow-md flex items-center gap-2 border border-slate-600" title="Sauvegarder dans le navigateur">
-                <Save size={18} /> Sauver
-              </button>
-              <button onClick={resetAll} className="px-3 py-2 rounded-2xl bg-[#1a1f2e] hover:bg-[#252b3d] transition shadow-md flex items-center gap-2 border border-slate-600" title="Revenir aux valeurs d'exemple">
-                <RefreshCcw size={18} /> Réinitialiser
-              </button>
-            </div>
-
-            <p className="mt-6 text-xs text-zinc-500">Astuce : Raccourcis → <kbd>F</kbd> plein écran, <kbd>Échap</kbd> quitter. Les données sont enregistrées automatiquement dans votre navigateur (localStorage).</p>
-          </div>
-
-          <AnimatePresence>
-            {isFullscreen && (
-              <motion.div
-                key="fs"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-50"
-                style={{ backgroundColor: 'rgba(0,0,0,0.95)' }}
-              >
-                <div className="absolute top-4 right-4">
-                  <button
-                    onClick={toggleFullscreen}
-                    className="px-4 py-2 rounded-xl bg-[#1a1f2e] hover:bg-[#252b3d] border border-slate-600 text-sm"
-                  >
-                    Quitter le plein écran
-                  </button>
-                </div>
-
-                <div className="max-w-6xl mx-auto pt-16 px-6 space-y-6">
-                  {displayPlayers.map((p) => {
-                    const max = Number(p.max) > 0 ? Number(p.max) : 1;
-                    const clamped = Math.max(0, Math.min(Number(p.hp) || 0, max));
-                    const percent = Math.round((clamped / max) * 100);
-                    const bg = p.statuses && p.statuses.length
-                      ? getGradientForStatuses(p.statuses, themeAccent)
-                      : `linear-gradient(90deg, ${themeAccent}, #29d17b)`;
-                    const f = flash[p.id];
-                    return (
-                      <div key={p.id}>
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="text-3xl md:text-4xl font-extrabold tracking-wide drop-shadow" style={{ color: p.color }}>
-                            {p.name}
-                          </div>
-                          <div className="text-lg text-zinc-300">{percent}%</div>
-                        </div>
-                        <div className="relative w-full h-16 rounded-2xl overflow-hidden border border-emerald-500/30 shadow-inner" style={{ backgroundColor: clamped === 0 ? '#4a0000' : '#0f1419' }}>
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${percent}%` }}
-                            transition={{ type: "spring", stiffness: 120, damping: 18 }}
-                            className="h-full flex items-center justify-center font-extrabold text-xl"
-                            style={{ background: bg, color: "#004d26", textShadow: "0 0 2px rgba(0,0,0,0.5)" }}
-                          >
-                            {clamped}
-                          </motion.div>
-                          <AnimatePresence>
-                            {f && (
-                              <motion.div
-                                key={f.token}
-                                className="absolute inset-0 pointer-events-none rounded-2xl"
-                                style={{ backgroundColor: f.dir === "up" ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)" }}
-                                initial={{ opacity: 0.25 }}
-                                animate={{ opacity: 0 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.25 }}
-                              />
-                            )}
-                          </AnimatePresence>
-                          <div
-                            className="absolute inset-0 pointer-events-none opacity-10"
-                            style={{
-                              backgroundImage:
-                                "linear-gradient(45deg,transparent 25%,rgba(255,255,255,.3) 25%,rgba(255,255,255,.3) 50%,transparent 50%,transparent 75%,rgba(255,255,255,.3) 75%,rgba(255,255,255,.3))",
-                              backgroundSize: "28px 28px",
-                            }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-
-                  <div className="flex justify-end gap-3 pt-2">
-                    <button 
-                      onClick={() => setSortMode("name")} 
-                      className={`px-4 py-2 rounded-xl border text-sm transition-all ${
-                        sortMode === "name" 
-                          ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/30" 
-                          : "bg-[#1a1f2e] hover:bg-[#252b3d] border-slate-600"
-                      }`}
-                    >
-                      Noms
-                    </button>
-                    <button 
-                      onClick={() => setSortMode("hpdesc")} 
-                      className={`px-4 py-2 rounded-xl border text-sm transition-all ${
-                        sortMode === "hpdesc" 
-                          ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/30" 
-                          : "bg-[#1a1f2e] hover:bg-[#252b3d] border-slate-600"
-                      }`}
-                    >
-                      PV Max
-                    </button>
-                    <button 
-                      onClick={() => setSortMode("hpasc")} 
-                      className={`px-4 py-2 rounded-xl border text-sm transition-all ${
-                        sortMode === "hpasc" 
-                          ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/30" 
-                          : "bg-[#1a1f2e] hover:bg-[#252b3d] border-slate-600"
-                      }`}
-                    >
-                      PV Min
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      );
-    }
-
-    function Card({ children }) {
-      return <div className="rounded-2xl bg-[#1a1f2e]/80 border border-slate-700/50 p-4 shadow-lg">{children}</div>;
-    }
-
-    function NumInput({ label, value, onChange, min = 0 }) {
-      return (
-        <label className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-600 text-xs" style={{ backgroundColor: '#1a1f2e' }}>
-          <span className="text-zinc-400">{label}</span>
-          <input type="number" className="w-12 bg-transparent focus:outline-none text-zinc-100 text-xs" value={value} min={min} onChange={(e) => onChange(Number(e.target.value))} />
-        </label>
-      );
-    }
-
-    function StateButton({ active, onClick, label, style }) {
-      return (
-        <button
-          onClick={onClick}
-          style={style}
-          className={`text-xs px-2 py-0.5 rounded-md border ${active ? "shadow-inner" : "bg-[#1a1f2e] border-slate-600 text-zinc-300 hover:bg-[#252b3d]"}`}
-          title={label}
-        >
-          {label}
-        </button>
-      );
-    }
-
-    ReactDOM.render(<App />, document.getElementById('root'));
-  </script>
-</body>
-</html>
+function StateButton({ active, onClick, label, style }) {
+  return (
+    <button
+      onClick={onClick}
+      style={style}
+      className={`text-xs px-2 py-0.5 rounded-md border ${active ? "shadow-inner" : "bg-[#1a1f2e] border-slate-600 text-zinc-300 hover:bg-[#252b3d]"}`}
+      title={label}
+    >
+      {label}
+    </button>
+  );
+}
