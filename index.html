@@ -220,6 +220,28 @@
   100% { opacity: 0; }
 }
 
+
+/* UI 6.6b: ensure flash applies to ANY .key button, not only inside .big-keys */
+.key { position: relative; overflow: visible; }
+
+.key.btn-flash-pos::after,
+.key.btn-flash-neg::after{
+  content:"";
+  position:absolute;
+  inset:-3px;
+  border-radius: inherit;
+  pointer-events:none;
+  animation: btnFlash 340ms ease-out;
+}
+.key.btn-flash-pos::after{ box-shadow: 0 0 0 3px rgba(40, 200, 120, 0.65); }
+.key.btn-flash-neg::after{ box-shadow: 0 0 0 3px rgba(220, 60, 60, 0.7); }
+
+@keyframes btnFlash {
+  0%   { opacity: 0; transform: scale(1); }
+  20%  { opacity: 1; transform: scale(0.98); }
+  100% { opacity: 0; transform: scale(1); }
+}
+
 </style>
 
 <style id="ui-step4-compact-override">
