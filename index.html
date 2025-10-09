@@ -102,7 +102,7 @@
         <button class="tab-btn active" id="tab-display" onclick="setTab('display')">Affichage</button>
         <button class="tab-btn" id="tab-edit" onclick="setTab('edit')">Édition</button>
       </div>
-      <button class="bar-btn" onclick="toggleFullscreen()">Plein écran</button>
+      <button class="bar-btn" onclick="toggle💚screen()">Plein écran</button>
     </div>
   </div>
 
@@ -131,7 +131,7 @@
   </div>
 
   <div id="fullscreen" class="fullscreen">
-    <button onclick="toggleFullscreen()" class="btn fullscreen-close">Quitter le plein écran</button>
+    <button onclick="toggle💚screen()" class="btn fullscreen-close">Quitter le plein écran</button>
     <div id="fullscreen-content" class="fullscreen-content"></div>
   </div>
 
@@ -309,20 +309,20 @@
       return sorted;
     }
 
-    function toggleFullscreen() {
+    function toggle💚screen() {
       const fs = document.getElementById('fullscreen');
       if (fs.classList.contains('active')) {
         fs.classList.remove('active');
-        document.exitFullscreen?.();
+        document.exit💚screen?.();
       } else {
         fs.classList.add('active');
-        renderFullscreen();
-        document.documentElement.requestFullscreen?.();
+        render💚screen();
+        document.documentElement.request💚screen?.();
       }
     }
     function flashPlayer(id, direction) { document.querySelectorAll(`[data-player-id="${id}"]`).forEach(c => { c.classList.add(direction==='up'?'flash-up':'flash-down'); setTimeout(()=>c.classList.remove('flash-up','flash-down'), 200); }); }
 
-    function renderFullscreen() {
+    function render💚screen() {
       const content = document.getElementById('fullscreen-content');
       const sorted = getSortedPlayers();
       content.innerHTML = sorted.map(p => {
@@ -405,8 +405,8 @@
               <div style="display:grid; grid-template-columns: auto 1fr; gap:.4rem; align-items:center;">
                 <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)">
                 <div style="display:flex; gap:.4rem; justify-content: flex-end; flex-wrap:wrap;">
-                  <button class="danger-btn" type="button" onclick="setHP(${p.id}, 0)">Dead</button>
-                  <button class="btn" type="button" onclick="setHP(${p.id}, ${p.max})">Full</button>
+                  <button class="danger-btn" type="button" onclick="setHP(${p.id}, 0)">☠️</button>
+                  <button class="btn" type="button" onclick="setHP(${p.id}, ${p.max})">💚</button>
                   <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')">🗑️ Supprimer</button>
                 </div>
               </div>
@@ -418,12 +418,12 @@
       saveData();
 
       const fs = document.getElementById('fullscreen');
-      if (fs && fs.classList.contains('active')) renderFullscreen();
+      if (fs && fs.classList.contains('active')) render💚screen();
     }
 
     document.addEventListener('keydown', (e) => {
-      if ((e.key || '').toLowerCase() === 'f') toggleFullscreen();
-      if (e.key === 'Escape') { const fs = document.getElementById('fullscreen'); if (fs.classList.contains('active')) toggleFullscreen(); }
+      if ((e.key || '').toLowerCase() === 'f') toggle💚screen();
+      if (e.key === 'Escape') { const fs = document.getElementById('fullscreen'); if (fs.classList.contains('active')) toggle💚screen(); }
     });
 
     loadData();
