@@ -178,43 +178,6 @@
   vertical-align: middle;
 }
 
-
-/* removed UI Step 6.1 padding */
-.edit-card { position: relative; padding-top: 48px; } /* room for the absolute delete button */
-.edit-card .danger-btn {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 2;
-  padding: 6px 10px;
-  line-height: 1;
-}
-/* Optional: reduce button footprint on small screens */
-@media (max-width: 600px) {
-  .edit-card { padding-top: 44px; }
-  .edit-card .danger-btn { padding: 4px 8px; }
-}
-
-
-/* removed UI Step 6.2 override */
-.edit-card .danger-btn {
-  position: static !important;   /* stop absolute */
-  margin-left: 8px;
-  line-height: 1;
-  padding: 6px 8px;
-  white-space: nowrap;
-}
-
-
-/* UI Fix: Keep delete button inline-friendly and compact (no absolute positioning) */
-.edit-card .danger-btn {
-  position: static !important;
-  margin-left: 8px;
-  line-height: 1;
-  padding: 6px 8px;
-  white-space: nowrap;
-}
-
 </style>
 
 <style id="ui-step4-compact-override">
@@ -318,22 +281,6 @@
   vertical-align: middle;
 }
 
-</style>
-
-
-<style id="ui-step6-delete-top-right">
-/* === UI Step 6: Move delete button to the top-right in edit mode === */
-.edit-card{ position: relative; }
-.edit-card .danger-btn{
-  position:absolute;
-  top:8px;
-  right:8px;
-  z-index:2;
-  padding:6px 10px;
-  line-height:1;
-}
-/* Ensure emoji-only button looks compact; if text label exists, keep it but prevent overflow */
-.edit-card .danger-btn::after{ content: ''; }
 </style>
 
 </head>
@@ -706,77 +653,5 @@
       window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(console.error); });
     }
   </script>
-
-<!-- removed previous inline-move script -->
-
-
-<script>
-(function(){
-  function moveDeleteNextToMax(card){
-    try{
-      const btn = card.querySelector('.danger-btn');
-      if(!btn) return;
-      // Emoji-only + accessibility
-      btn.textContent = '🗑️';
-      btn.setAttribute('aria-label','Supprimer');
-      btn.title = 'Supprimer';
-
-      // Find a number input that looks like "Max"
-      const inputs = Array.from(card.querySelectorAll('input[type="number"]'));
-      let maxInput = null;
-      for (const inp of inputs){
-        const name = (inp.name||'') + ' ' + (inp.id||'') + ' ' + (inp.getAttribute('aria-label')||'');
-        const labelText = (inp.closest('label')?.textContent||'') + ' ' + (inp.previousElementSibling?.textContent||'');
-        if (/\bmax\b/i.test(name) || /\bmax\b/i.test(labelText)){
-          maxInput = inp;
-          break;
-        }
-      }
-      if(!maxInput) return;
-
-      // Insert a spacer span right after the input and move the button there
-      const span = document.createElement('span');
-      span.className = 'inline-delete-slot';
-      span.style.display = 'inline-flex';
-      span.style.alignItems = 'center';
-      span.style.marginLeft = '8px';
-
-      // If nextSibling is already our slot, skip
-      if(!(maxInput.nextSibling && maxInput.nextSibling.classList && maxInput.nextSibling.classList.contains('inline-delete-slot'))){
-        maxInput.insertAdjacentElement('afterend', span);
-      } else {
-        // reuse existing slot
-        const existing = maxInput.nextSibling;
-        existing.innerHTML = '';
-        existing.appendChild(btn);
-        return;
-      }
-      span.appendChild(btn);
-    }catch(e){ /* noop */ }
-  }
-
-  function alignAll(){
-    document.querySelectorAll('.edit-card').forEach(moveDeleteNextToMax);
-  }
-
-  // Run once after content settles
-  const boot = () => setTimeout(alignAll, 50);
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-  } else {
-    boot();
-  }
-
-  // Try again on simple nav toggles if they exist
-  document.addEventListener('click', function(e){
-    const t = e.target;
-    if(!t) return;
-    if (t.matches('[data-tab], [data-view], .btn, button')) {
-      setTimeout(alignAll, 50);
-    }
-  });
-})();
-</script>
-
 </body>
 </html>
