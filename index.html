@@ -178,6 +178,23 @@
   vertical-align: middle;
 }
 
+
+/* UI Step 6.1: Reserve space so the top-right delete button doesn't overlap fields */
+.edit-card { position: relative; padding-top: 48px; } /* room for the absolute delete button */
+.edit-card .danger-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 2;
+  padding: 6px 10px;
+  line-height: 1;
+}
+/* Optional: reduce button footprint on small screens */
+@media (max-width: 600px) {
+  .edit-card { padding-top: 44px; }
+  .edit-card .danger-btn { padding: 4px 8px; }
+}
+
 </style>
 
 <style id="ui-step4-compact-override">
