@@ -585,15 +585,16 @@
         return `
           <div class="edit-card" data-player-id="${p.id}">
             <div class="edit-header">
-              <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)">
-              <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" /><div class="inline-field">
-                <label>Max</label>
-                <input type="number" value="${p.max}" min="1" onchange="updatePlayer(${p.id}, 'max', parseInt(this.value))">
-              
-      <div class="header-actions">
-        <button class="btn btn-danger btn-delete" type="button"
-          onclick="removePlayer(${p.id}, 'Supprimer ${p.name} ?')"><span aria-hidden="true">🗑️</span><span class="sr-only">Supprimer</span></button>
-      </div>
+  <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)">
+  <input class="edit-name" type="text" value="${p.name}" oninput="updatePlayer(${p.id}, 'name', this.value)" placeholder="Nom">
+  <span class="badge">${p.hp}/${p.max}</span>
+  <div class="header-actions">
+    <button class="btn btn-danger btn-delete" type="button"
+      onclick="removePlayer(${p.id}, 'Supprimer ${p.name} ?')">
+      <span aria-hidden="true">🗑️</span><span class="sr-only">Supprimer</span>
+    </button>
+  </div>
+</div>
     </div>
               <span class="badge">${p.hp}/${p.max}</span>
             </div>
@@ -611,10 +612,7 @@
   <button class="key pos" onclick="setHP(${p.id}, ${p.max})" type="button">💚</button>
 </div>
 
-              <div style="display:flex; justify-content:flex-end;">
-  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')">🗑️ Supprimer</button>
-</div>
-            </div>
+              </div>
           </div>
         `;
       }).join('');
