@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Tableau des Points de Vie</title>
 
+  <!-- PWA meta -->
   <meta name="theme-color" content="#0a0e1a">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,26 +20,455 @@
       --panel-plain: #1a1f2e;
       --muted: #a1a1aa;
       --border: rgba(71,85,105,0.6);
+      --accent: #63ff8b;
     }
+
     * { box-sizing: border-box; }
+    html, body { margin:0; padding:0; height:100%; }
     body {
-      margin:0; padding:0; height:100%;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-      background:var(--bg); color:#f4f4f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: #f4f4f5;
     }
-    .btn { padding:.45rem .6rem; border-radius:10px; border:1px solid var(--border);
-      background:#121828; color:#f4f4f5; font-size:.95rem; cursor:pointer; }
-    .btn.full {
-      background: rgba(22, 163, 74, 0.6);
-      border: 1px solid #16a34a;
-      color: #d1fae5;
-    }
-    .btn.full:hover { background: rgba(22,163,74,0.8); }
+
+    .app { max-width: 860px; margin: 0 auto; padding-bottom: env(safe-area-inset-bottom); }
+
+    .topbar { position: sticky; top: 0; z-index: 30; backdrop-filter: saturate(1.2) blur(8px);
+      background: linear-gradient(180deg, rgba(10,14,26,0.95), rgba(10,14,26,0.7)); border-bottom: 1px solid var(--border); }
+    .topbar-inner { max-width: 860px; margin: 0 auto; padding: .6rem .6rem .45rem; display: flex; gap: .4rem; align-items: center; }
+    h1.title { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; margin-right: auto; }
+    .tabs { background: var(--panel-plain); border: 1px solid var(--border); border-radius: 9999px; display: inline-flex; padding: .2rem; gap: .2rem; }
+    .tab-btn { appearance: none; border: 0; border-radius: 9999px; padding: .4rem .7rem; font-weight: 700; font-size: .9rem; color: #e5e7eb; background: transparent; }
+    .tab-btn.active { background: #2563eb; color: white; box-shadow: 0 0 14px rgba(37,99,235,.3); }
+    .bar-btn { margin-left: .4rem; padding: .4rem .6rem; border-radius: 12px; background: var(--panel-plain); border: 1px solid var(--border); color: #f4f4f5; font-weight: 600; font-size:.9rem; }
+
+    .section { padding: .6rem; }
+
+    .display-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: .6rem; box-shadow: 0 8px 18px rgba(0,0,0,.22); }
+    .display-header { display: flex; justify-content: flex-end; gap: .4rem; margin-bottom: .4rem; }
+    .btn { padding: .45rem .6rem; border-radius: 10px; border: 1px solid var(--border); background: #121828; color: #f4f4f5; font-size:.95rem; }
+
+    .player-display { margin-bottom: .6rem; }
+    .player-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:.2rem;}
+    .player-name-display { font-size: 1.2rem; font-weight: 800; letter-spacing: .02em; text-shadow: 0 1px 2px rgba(0,0,0,.3); }
+    .player-percent { color: var(--muted); font-size: .9rem; }
+
+    .hp-bar-container { position:relative; width:100%; height:2.4rem; border-radius:.7rem; overflow:hidden; border:1px solid rgba(16,185,129,.25); box-shadow: inset 0 2px 4px rgba(0,0,0,.35); background:#0f1419; }
+    .hp-bar { height:100%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:.95rem; color:#004d26; transition:width .35s cubic-bezier(.4,0,.2,1); position:relative; }
+    .hp-bar::after { content:""; position:absolute; inset:0; background-image: linear-gradient(45deg, transparent 25%, rgba(255,255,255,.12) 25%, rgba(255,255,255,.12) 50%, transparent 50%, transparent 75%, rgba(255,255,255,.12) 75%, rgba(255,255,255,.12)); background-size: 16px 16px; opacity:.22; pointer-events:none; }
+
+    .sort-buttons { display:flex; justify-content:flex-end; gap:.4rem; padding-top:.4rem; }
+    .btn-sort { padding:.35rem .55rem; border-radius:9px; border:1px solid var(--border); font-size:.9rem; }
+    .btn-sort.active { background:#2563eb; color:#fff; border-color:#3b82f6; }
+
+    /* EDIT UI: compact */
+    .edit-stack { display: flex; flex-direction: column; gap: .5rem; }
+    .edit-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+    .edit-header { display:flex; align-items:center; gap:.45rem; padding:.55rem .6rem; flex-wrap: wrap; }
+    .pill { font-size:.7rem; font-weight:800; letter-spacing:.02em; padding:.25rem .45rem; border-radius:9999px; background:#0f1419; border:1px solid var(--border); min-width:38px; text-align:center; }
+    .edit-name { flex:1 1 140px; font-size:.95rem; font-weight:800; border:0; background:transparent; color:#f4f4f5; outline:none; min-width: 120px; }
+    .badge { font-size:.7rem; padding:.2rem .4rem; border-radius:9999px; border:1px solid var(--border); color:#e5e7eb; background:#0f1419; }
+
+    .inline-field { display:flex; align-items:center; gap:.3rem; background:#0f1419; border:1px solid var(--border); border-radius:9px; padding:.28rem .4rem; min-height:30px; }
+    .inline-field label { font-size:.75rem; color:var(--muted); }
+    .inline-field input[type="number"] { width:56px; text-align:center; background:transparent; border:0; color:#fff; font-size:.9rem; outline:none; }
+
+    .edit-body { padding:.5rem .6rem .6rem; border-top:1px dashed var(--border); display:grid; grid-template-columns:1fr; gap:.5rem; }
+    .big-keys { display:grid; grid-template-columns: repeat(6, 1fr); gap:.4rem; }
+    .key { min-height: 36px; border-radius: 10px; font-weight: 900; font-size: .95rem; border: 1px solid var(--border); background: #121828; color: #e5e7eb; padding: .2rem .3rem; }
+    .key.neg { background: rgba(127,29,29,.5); color: #fecaca; }
+    .key.pos { background: rgba(20,83,45,.5); color: #bbf7d0; }
+
+    .danger-btn { background: rgba(127,29,29,.45); color:#fecaca; border:1px solid #991b1b; padding:.45rem .6rem; border-radius: 10px; font-weight:700; font-size:.9rem; }
+    .btn { cursor:pointer; }
+
+    .color-pick { width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--border); background: #0f1419; }
+
+    .fullscreen { position:fixed; inset:0; z-index:50; background: rgba(0,0,0,.95); padding: 3rem .6rem; display:none; }
+    .fullscreen.active { display:block; }
+    .fullscreen-close { position:absolute; top:.6rem; right:.6rem; }
+
+    @keyframes flash-up { from { box-shadow: inset 0 0 26px rgba(34,197,94,.45);} to { box-shadow:none;} }
+    @keyframes flash-down { from { box-shadow: inset 0 0 26px rgba(239,68,68,.45);} to { box-shadow:none;} }
+    .flash-up { animation: flash-up .22s ease-out; }
+    .flash-down { animation: flash-down .22s ease-out; }
   </style>
 </head>
 <body>
-  <div id="section-edit">
-    <button class="btn full" type="button" onclick="alert('Full HP')">Full</button>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <h1 class="title">Tableau des Points de Vie</h1>
+      <div class="tabs">
+        <button class="tab-btn active" id="tab-display" onclick="setTab('display')">Affichage</button>
+        <button class="tab-btn" id="tab-edit" onclick="setTab('edit')">Édition</button>
+      </div>
+      <button class="bar-btn" onclick="toggleFullscreen()">Plein écran</button>
+    </div>
   </div>
+
+  <div class="app">
+    <section id="section-display" class="section">
+      <div class="display-card">
+        <div id="display-area"></div>
+        <div class="sort-buttons">
+          <button onclick="sortPlayers('name')" id="sort-name" class="btn-sort">Noms</button>
+          <button onclick="sortPlayers('hpdesc')" id="sort-hpdesc" class="btn-sort">PV Max</button>
+          <button onclick="sortPlayers('hpasc')" id="sort-hpasc" class="btn-sort">PV Min</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="section-edit" class="section" style="display:none;">
+      <div class="edit-stack" id="edit-stack"></div>
+      <div style="height:.4rem;"></div>
+      <div class="display-card" style="margin-top:.2rem;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:.4rem;">
+          <button class="btn" onclick="addPlayer()">+ Ajouter</button>
+          <button class="btn" onclick="resetAll()">🔄 Réinitialiser</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="fullscreen" class="fullscreen">
+    <button onclick="toggleFullscreen()" class="btn fullscreen-close">Quitter le plein écran</button>
+    <div id="fullscreen-content" class="fullscreen-content"></div>
+  </div>
+
+  <script>
+    function setTab(which) {
+      const isDisplay = which === 'display';
+      document.getElementById('section-display').style.display = isDisplay ? '' : 'none';
+      document.getElementById('section-edit').style.display = isDisplay ? 'none' : '';
+      document.getElementById('tab-display').classList.toggle('active', isDisplay);
+      document.getElementById('tab-edit').classList.toggle('active', !isDisplay);
+    }
+
+    const defaultPlayers = [
+      { id: 1, name: "Alchimiste", hp: 32, max: 50, color: "#4a6edb" },
+      { id: 2, name: "Destructeur", hp: 48, max: 50, color: "#c13b3b" },
+      { id: 3, name: "Pyromane", hp: 20, max: 50, color: "#e6a500" },
+      { id: 4, name: "Déviant", hp: 24, max: 50, color: "#c07ce6" },
+      { id: 5, name: "Lamevent", hp: 28, max: 50, color: "#60a853" }
+    ];
+
+    let players = [];
+    let sortMode = 'none';
+    let nextId = 6;
+    const USE_FIREBASE = true;
+
+    function saveData() { if (!USE_FIREBASE) localStorage.setItem('pv-tracker-v1', JSON.stringify(players)); }
+    function loadData() {
+      if (!USE_FIREBASE) {
+        const saved = localStorage.getItem('pv-tracker-v1');
+        if (saved) {
+          try { players = JSON.parse(saved); nextId = players.length ? Math.max(...players.map(p => p.id)) + 1 : 1; }
+          catch { players = JSON.parse(JSON.stringify(defaultPlayers)); nextId = 6; }
+        } else { players = JSON.parse(JSON.stringify(defaultPlayers)); nextId = 6; }
+      }
+    }
+
+    async function resetAll() {
+      if (!USE_FIREBASE) {
+        players = JSON.parse(JSON.stringify(defaultPlayers));
+        nextId = 6;
+        return render();
+      }
+      try {
+        const snap = await playersCol.get();
+        const batch1 = db.batch();
+        snap.forEach(doc => {
+          batch1.set(doc.ref, { __deleted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        });
+        await batch1.commit();
+
+        const batch2 = db.batch();
+        defaultPlayers.forEach(p => {
+          const ref = playersCol.doc(String(p.id));
+          batch2.set(ref, { ...p, __deleted: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        });
+        await batch2.commit();
+      } catch (e) {
+        console.error('resetAll failed', e);
+      }
+    }
+
+    function addPlayer() {
+      if (!USE_FIREBASE) { players.push({ id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af" }); return render(); }
+      const p = { id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", __deleted: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      playersCol.doc(String(p.id)).set(p, { merge: true });
+    }
+
+    async function removePlayer(id, docId) {
+      // UI optimiste
+      players = players.filter(p => p.id != id);
+      render();
+
+      if (!USE_FIREBASE) return;
+      try {
+        if (docId) {
+          await playersCol.doc(docId).set({ __deleted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+          return;
+        }
+      } catch (e) {
+        console.warn('soft delete by docId failed, fallback to query', e);
+      }
+      try {
+        const q = await playersCol.where('id', '==', id).limit(1).get();
+        if (!q.empty) {
+          await q.docs[0].ref.set({ __deleted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        }
+      } catch (e) {
+        console.error('soft delete by id failed', e);
+      }
+    }
+
+    function updatePlayer(id, field, value) {
+      if (!USE_FIREBASE) {
+        const player = players.find(p => p.id === id);
+        if (player) {
+          if (field === 'max') {
+            const v = Math.max(1, Number(value)||1);
+            player.max = v;
+            if (player.hp > v) player.hp = v;
+          } else if (field === 'name') {
+            player.name = value;
+          } else if (field === 'color') {
+            player.color = value;
+          } else if (field === 'hp') {
+            const v = Math.max(0, Math.min(player.max, Number(value)||0));
+            player.hp = v;
+          }
+          render();
+        }
+        return;
+      }
+      const patch = { updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      if (field === 'max') patch.max = Math.max(1, Number(value) || 1);
+      else if (field === 'name' || field === 'color') patch[field] = value;
+      else if (field === 'hp') patch.hp = Math.max(0, Number(value) || 0);
+      playersCol.doc(String(id)).set(patch, { merge: true });
+    }
+
+    const debounceMap = new Map();
+    function changeHP(id, delta) {
+      if (!USE_FIREBASE) {
+        const player = players.find(p => p.id === id);
+        if (player) {
+          player.hp = Math.max(0, Math.min(player.max, player.hp + delta));
+          render();
+          flashPlayer(id, delta > 0 ? 'up' : 'down');
+        }
+        return;
+      }
+      clearTimeout(debounceMap.get(id));
+      const t = setTimeout(async () => {
+        const snap = await playersCol.doc(String(id)).get();
+        const p = snap.data(); if (!p) return;
+        const next = Math.max(0, Math.min(p.max, (p.hp || 0) + delta));
+        playersCol.doc(String(id)).set({ hp: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      }, 110);
+      debounceMap.set(id, t);
+    }
+    function setHP(id, value) {
+      if (!USE_FIREBASE) {
+        const player = players.find(p => p.id === id);
+        if (player) {
+          const oldHP = player.hp;
+          player.hp = Math.max(0, Math.min(player.max, Number(value)||0));
+          render();
+          if (player.hp !== oldHP) flashPlayer(id, player.hp > oldHP ? 'up' : 'down');
+        }
+        return;
+      }
+      playersCol.doc(String(id)).get().then(s => {
+        const max = Math.max(1, (s.data()?.max ?? 1));
+        const clamped = Math.max(0, Math.min(max, Number(value) || 0));
+        return playersCol.doc(String(id)).set({ hp: clamped, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      });
+    }
+    function sortPlayers(mode) { sortMode = mode; document.querySelectorAll('.btn-sort').forEach(b=>b.classList.remove('active')); if (mode!=='none') document.getElementById(`sort-${mode}`).classList.add('active'); render(); }
+
+    function getHealthColor(percent) {
+      if (percent > 50) return 'linear-gradient(90deg, #10b981, #22c55e)';
+      else if (percent > 25) return 'linear-gradient(90deg, #eab308, #facc15)';
+      else if (percent > 10) return 'linear-gradient(90deg, #f97316, #fb923c)';
+      else return 'linear-gradient(90deg, #dc2626, #ef4444)';
+    }
+    function getTextColor(percent) {
+      if (percent > 50) return '#004d26';
+      else if (percent > 25) return '#713f12';
+      else if (percent > 10) return '#7c2d12';
+      else return '#450a0a';
+    }
+    function getSortedPlayers() {
+      const sorted = [...players];
+      if (sortMode === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name));
+      else if (sortMode === 'hpdesc') sorted.sort((a, b) => b.hp - a.hp);
+      else if (sortMode === 'hpasc') sorted.sort((a, b) => a.hp - b.hp);
+      return sorted;
+    }
+
+    function toggleFullscreen() {
+      const fs = document.getElementById('fullscreen');
+      if (fs.classList.contains('active')) {
+        fs.classList.remove('active');
+        document.exitFullscreen?.();
+      } else {
+        fs.classList.add('active');
+        renderFullscreen();
+        document.documentElement.requestFullscreen?.();
+      }
+    }
+    function flashPlayer(id, direction) { document.querySelectorAll(`[data-player-id="${id}"]`).forEach(c => { c.classList.add(direction==='up'?'flash-up':'flash-down'); setTimeout(()=>c.classList.remove('flash-up','flash-down'), 200); }); }
+
+    function renderFullscreen() {
+      const content = document.getElementById('fullscreen-content');
+      const sorted = getSortedPlayers();
+      content.innerHTML = sorted.map(p => {
+        const percent = Math.round((p.hp / p.max) * 100);
+        const bgColor = p.hp === 0 ? '#4a0000' : '#0f1419';
+        const barColor = getHealthColor(percent);
+        const textColor = getTextColor(percent);
+        const displayHP = p.hp === 0 ? '' : p.hp;
+        return `
+          <div class="player-display">
+            <div class="player-header">
+              <div class="player-name-display" style="color: ${p.color}">${p.name}</div>
+              <div class="player-percent">${percent}%</div>
+            </div>
+            <div class="hp-bar-container" style="background-color: ${bgColor}">
+              <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};">
+                ${displayHP}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function render() {
+      const sorted = getSortedPlayers();
+      const displayArea = document.getElementById('display-area');
+      displayArea.innerHTML = sorted.map(p => {
+        const percent = Math.round((p.hp / p.max) * 100);
+        const bgColor = p.hp === 0 ? '#4a0000' : '#0f1419';
+        const barColor = getHealthColor(percent);
+        const textColor = getTextColor(percent);
+        const displayHP = p.hp === 0 ? '' : p.hp;
+        return `
+          <div class="player-display">
+            <div class="player-header">
+              <div class="player-name-display" style="color: ${p.color}">${p.name}</div>
+              <div class="player-percent">${percent}%</div>
+            </div>
+            <div class="hp-bar-container" style="background-color: ${bgColor}">
+              <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};">
+                ${displayHP}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // EDIT: compact header with inline PV/Max
+      const edit = document.getElementById('edit-stack');
+      edit.innerHTML = players.map(p => {
+        const percent = Math.round((p.hp / p.max) * 100);
+        const docId = p._docId || String(p.id);
+        return `
+          <div class="edit-card" data-player-id="${p.id}">
+            <div class="edit-header">
+              <span class="pill" style="border-color:${p.color}; color:${p.color}">${percent}%</span>
+              <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" />
+              <div class="inline-field">
+                <label>PV</label>
+                <input type="number" value="${p.hp}" onchange="setHP(${p.id}, parseInt(this.value))">
+              </div>
+              <div class="inline-field">
+                <label>Max</label>
+                <input type="number" value="${p.max}" min="1" onchange="updatePlayer(${p.id}, 'max', parseInt(this.value))">
+              </div>
+              <span class="badge">${p.hp}/${p.max}</span>
+            </div>
+
+            <div class="edit-body">
+              <div class="big-keys">
+                <button class="key neg" onclick="changeHP(${p.id}, -10)" type="button">-10</button>
+                <button class="key neg" onclick="changeHP(${p.id}, -5)" type="button">-5</button>
+                <button class="key neg" onclick="changeHP(${p.id}, -1)" type="button">-1</button>
+                <button class="key pos" onclick="changeHP(${p.id}, 1)" type="button">+1</button>
+                <button class="key pos" onclick="changeHP(${p.id}, 5)" type="button">+5</button>
+                <button class="key pos" onclick="changeHP(${p.id}, 10)" type="button">+10</button>
+              </div>
+
+              <div style="display:grid; grid-template-columns: auto 1fr; gap:.4rem; align-items:center;">
+                <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)">
+                <div style="display:flex; gap:.4rem; justify-content: flex-end; flex-wrap:wrap;">
+                  <button class="danger-btn" type="button" onclick="setHP(${p.id}, 0)">Dead</button>
+                  <button class="btn" type="button" onclick="setHP(${p.id}, ${p.max})">Full</button>
+                  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')">🗑️ Supprimer</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      saveData();
+
+      const fs = document.getElementById('fullscreen');
+      if (fs && fs.classList.contains('active')) renderFullscreen();
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.key || '').toLowerCase() === 'f') toggleFullscreen();
+      if (e.key === 'Escape') { const fs = document.getElementById('fullscreen'); if (fs.classList.contains('active')) toggleFullscreen(); }
+    });
+
+    loadData();
+    render();
+  </script>
+
+  <!-- Firebase (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+  <script>
+    if (window.firebase && true) {
+      const firebaseConfig = {
+        apiKey: "AIzaSyBRdDQ6SfPrwU1pT-m2DEdL1RuSIRd3uZ8",
+        authDomain: "hpbars-4bd0e.firebaseapp.com",
+        projectId: "hpbars-4bd0e",
+        storageBucket: "hpbars-4bd0e.firebasestorage.app",
+        messagingSenderId: "587307780453",
+        appId: "1:587307780453:web:49520794cb59c82fe5b98c",
+        measurementId: "G-LKE20WLCSZ"
+      };
+      try { firebase.initializeApp(firebaseConfig); } catch (e) {}
+      const auth = firebase.auth();
+      const db = firebase.firestore();
+      auth.signInAnonymously().catch(console.error);
+      db.enablePersistence({ synchronizeTabs: true }).catch((err) => { console.warn('Firestore persistence disabled:', err && err.code); });
+
+      const ROOM_ID = 'AMERTUME_HP';
+      window.db = db;
+      window.playersCol = db.collection('rooms').doc(ROOM_ID).collection('players');
+
+      playersCol.orderBy('id').onSnapshot((snap) => {
+        players = snap.docs
+          .map(d => ({ ...d.data(), _docId: d.id }))
+          .filter(p => !p.__deleted);
+        nextId = players.length ? Math.max(...players.map(p => p.id)) + 1 : 1;
+        render();
+      });
+    }
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(console.error); });
+    }
+  </script>
 </body>
 </html>
