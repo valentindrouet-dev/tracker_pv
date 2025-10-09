@@ -164,32 +164,18 @@
     .flash-up { animation: flash-up .22s ease-out; }
     .flash-down { animation: flash-down .22s ease-out; }
   
-/* === Micro-ajustement PV central (visuel seulement) — v2 (police légèrement agrandie) === */
+/* === Micro-ajustement PV central (visuel seulement) === */
 .edit-card .pv-center {
   height: 36px;
   min-height: 36px;
   line-height: 36px;
   font-weight: 800;
-  font-size: 1.15rem;  /* légèrement plus grand qu'avant (1.05rem → 1.15rem) */
+  font-size: 1.05rem;
   text-align: center;
   padding: 0 10px;
   border-radius: .5rem;
   box-sizing: border-box;
   vertical-align: middle;
-}
-
-
-/* === Masquage visuel du champ PV/PV Max en haut à droite === */
-.hp-ratio, .pv-ratio, .pvmax-display {
-  display: none !important;
-}
-
-
-/* === Masquage du champ PV/PV Max (ex: 50/50) en mode édition === */
-.edit-card .pv-ratio,
-.edit-card .hp-ratio,
-.edit-card .pvmax-display {
-  display: none !important;
 }
 
 </style>
@@ -233,32 +219,18 @@
   .edit-card .pv-center{ width:2.9rem !important; font-size:.85rem !important; }
 }
 
-/* === Micro-ajustement PV central (visuel seulement) — v2 (police légèrement agrandie) === */
+/* === Micro-ajustement PV central (visuel seulement) === */
 .edit-card .pv-center {
   height: 36px;
   min-height: 36px;
   line-height: 36px;
   font-weight: 800;
-  font-size: 1.15rem;  /* légèrement plus grand qu'avant (1.05rem → 1.15rem) */
+  font-size: 1.05rem;
   text-align: center;
   padding: 0 10px;
   border-radius: .5rem;
   box-sizing: border-box;
   vertical-align: middle;
-}
-
-
-/* === Masquage visuel du champ PV/PV Max en haut à droite === */
-.hp-ratio, .pv-ratio, .pvmax-display {
-  display: none !important;
-}
-
-
-/* === Masquage du champ PV/PV Max (ex: 50/50) en mode édition === */
-.edit-card .pv-ratio,
-.edit-card .hp-ratio,
-.edit-card .pvmax-display {
-  display: none !important;
 }
 
 </style>
@@ -295,13 +267,13 @@
   .edit-card .big-keys .pv-center{ font-size:.95rem !important; }
 }
 
-/* === Micro-ajustement PV central (visuel seulement) — v2 (police légèrement agrandie) === */
+/* === Micro-ajustement PV central (visuel seulement) === */
 .edit-card .pv-center {
   height: 36px;
   min-height: 36px;
   line-height: 36px;
   font-weight: 800;
-  font-size: 1.15rem;  /* légèrement plus grand qu'avant (1.05rem → 1.15rem) */
+  font-size: 1.05rem;
   text-align: center;
   padding: 0 10px;
   border-radius: .5rem;
@@ -309,20 +281,22 @@
   vertical-align: middle;
 }
 
+</style>
 
-/* === Masquage visuel du champ PV/PV Max en haut à droite === */
-.hp-ratio, .pv-ratio, .pvmax-display {
-  display: none !important;
+
+<style id="ui-step6-delete-top-right">
+/* === UI Step 6: Move delete button to the top-right in edit mode === */
+.edit-card{ position: relative; }
+.edit-card .danger-btn{
+  position:absolute;
+  top:8px;
+  right:8px;
+  z-index:2;
+  padding:6px 10px;
+  line-height:1;
 }
-
-
-/* === Masquage du champ PV/PV Max (ex: 50/50) en mode édition === */
-.edit-card .pv-ratio,
-.edit-card .hp-ratio,
-.edit-card .pvmax-display {
-  display: none !important;
-}
-
+/* Ensure emoji-only button looks compact; if text label exists, keep it but prevent overflow */
+.edit-card .danger-btn::after{ content: ''; }
 </style>
 
 </head>
@@ -633,7 +607,7 @@
 </div>
 
               <div style="display:flex; justify-content:flex-end;">
-  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')">🗑️</button>
+  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')">🗑️ Supprimer</button>
 </div>
             </div>
           </div>
