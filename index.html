@@ -238,6 +238,67 @@
 }
 </style>
 
+
+<style id="ui-step6-delete-top-right">
+/* --- STEP6: move delete button to header top-right --- */
+.edit-card .edit-header{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:.5rem;
+}
+.edit-card .edit-header .header-actions{
+  margin-left:auto; /* push to right */
+  display:flex;
+  align-items:center;
+}
+.edit-card .edit-header .btn-delete{
+  padding:.4rem .6rem;
+  border-radius:.5rem;
+}
+@media (max-width: 500px){
+  .edit-card .edit-header{
+    gap:.4rem;
+  }
+  .edit-card .edit-header .btn-delete{
+    padding:.35rem .5rem;
+    font-size:.9rem;
+  }
+}
+</style>
+
+
+<style id="ui-step7-trash-and-bold-pv">
+/* --- STEP7: trash icon only + bold/large PV field --- */
+.edit-card .edit-header .btn-delete{
+  padding:.3rem .45rem !important;
+  font-size:1.05rem !important; /* icon size */
+  line-height:1 !important;
+}
+/* visually hidden helper */
+.sr-only{
+  position:absolute !important;
+  width:1px !important;
+  height:1px !important;
+  padding:0 !important;
+  margin:-1px !important;
+  overflow:hidden !important;
+  clip:rect(0,0,0,0) !important;
+  white-space:nowrap !important;
+  border:0 !important;
+}
+/* PV center field emphasis */
+.edit-card .big-keys .pv-center{
+  font-weight:700 !important;
+  font-size:1.2rem !important;
+}
+@media (max-width: 420px){
+  .edit-card .big-keys .pv-center{
+    font-size:1.1rem !important;
+  }
+}
+</style>
+
 </head>
 <body>
   <div class="topbar">
@@ -528,7 +589,12 @@
               <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" /><div class="inline-field">
                 <label>Max</label>
                 <input type="number" value="${p.max}" min="1" onchange="updatePlayer(${p.id}, 'max', parseInt(this.value))">
-              </div>
+              
+      <div class="header-actions">
+        <button class="btn btn-danger btn-delete" type="button"
+          onclick="removePlayer(${p.id}, 'Supprimer ${p.name} ?')"><span aria-hidden="true">🗑️</span><span class="sr-only">Supprimer</span></button>
+      </div>
+    </div>
               <span class="badge">${p.hp}/${p.max}</span>
             </div>
 
