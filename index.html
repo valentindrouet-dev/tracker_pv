@@ -16,6 +16,35 @@
   <style>
     
     
+
+/* --- STEP3: ultra-compact buttons to guarantee single-line fit --- */
+.big-keys{
+  display:flex;
+  flex-wrap:nowrap;
+  gap:.2rem;
+  align-items:center;
+  justify-content:center;
+}
+.big-keys .key{
+  flex:0 0 auto;      /* no growth, no shrink to negative widths */
+  min-width:0;        /* allow the smallest width possible */
+  padding:.28rem .38rem;
+  font-size:.9rem;
+  line-height:1;
+  border-radius:.5rem;
+  white-space:nowrap; /* keep labels intact */
+}
+.pv-center{
+  width:3.5rem;       /* narrower center field */
+  padding:.3rem .4rem;
+  font-size:.95rem;
+}
+@media (max-width: 420px){
+  .big-keys{ gap:.16rem; }
+  .big-keys .key{ padding:.26rem .34rem; font-size:.85rem; }
+  .pv-center{ width:3.2rem; font-size:.9rem; }
+}
+
 /* --- STEP2: single-row controls between ☠️ and 💚 --- */
 .big-keys{
   display:flex;
