@@ -61,11 +61,10 @@
     .btn-sort { padding:.4rem .7rem; border-radius:10px; border:1px solid var(--border); }
     .btn-sort.active { background:#2563eb; color:#fff; border-color:#3b82f6; }
 
-    /* EDIT UI */
+    /* EDIT UI: non-collapsible player cards */
     .edit-stack { display: flex; flex-direction: column; gap: .6rem; }
-    details.player-edit { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
-    .edit-summary { list-style:none; display:flex; align-items:center; gap:.6rem; padding:.8rem .8rem; }
-    .edit-summary::-webkit-details-marker { display:none; }
+    .edit-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    .edit-header { display:flex; align-items:center; gap:.6rem; padding:.8rem .8rem; }
     .pill { font-size:.85rem; font-weight:800; letter-spacing:.02em; padding:.35rem .6rem; border-radius:9999px; background:#0f1419; border:1px solid var(--border); min-width:44px; text-align:center; }
     .edit-name { flex:1; font-size:1.05rem; font-weight:800; border:0; background:transparent; color:#f4f4f5; outline:none; }
     .badge { font-size:.8rem; padding:.25rem .5rem; border-radius:9999px; border:1px solid var(--border); color:#e5e7eb; background:#0f1419; }
@@ -77,7 +76,6 @@
     .field input[type="number"], .field input[type="text"] { background:transparent; border:0; color:#fff; font-size:1rem; width:100%; outline:none; text-align:center; }
     .color-pick { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border); background: #0f1419; }
 
-    /* Buttons: force two lines (3 cols x 2 rows) */
     .big-keys { display:grid; grid-template-columns: repeat(3, 1fr); gap:.5rem; }
     .key { min-height: 52px; border-radius: 12px; font-weight: 900; font-size: 1.05rem; border: 1px solid var(--border); background: #121828; color: #e5e7eb; }
     .key.neg { background: rgba(127,29,29,.55); color: #fecaca; }
@@ -128,7 +126,6 @@
           <button class="btn" onclick="addPlayer()">+ Ajouter</button>
           <button class="btn" onclick="resetAll()">🔄 Réinitialiser</button>
         </div>
-        <!-- Removed the 3-info blocks (theme color, totals, %) as requested -->
       </div>
     </section>
   </div>
@@ -157,7 +154,6 @@
 
     let players = [];
     let sortMode = 'none';
-    let themeColor = '#63ff8b';
     let nextId = 6;
     const USE_FIREBASE = true;
 
@@ -182,8 +178,18 @@
       if (!USE_FIREBASE) {
         const player = players.find(p => p.id === id);
         if (player) {
-          player[field] = (field === 'max') ? Math.max(1, Number(value)||1) : value;
-          if (field === 'max' && player.hp > player.max) player.hp = player.max;
+          if (field === 'max') {
+            const v = Math.max(1, Number(value)||1);
+            player.max = v;
+            if (player.hp > v) player.hp = v;
+          } else if (field === 'name') {
+            player.name = value;
+          } else if (field === 'color') {
+            player.color = value;
+          } else if (field === 'hp') {
+            const v = Math.max(0, Math.min(player.max, Number(value)||0));
+            player.hp = v;
+          }
           render();
         }
         return;
@@ -191,13 +197,19 @@
       const patch = { updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
       if (field === 'max') patch.max = Math.max(1, Number(value) || 1);
       else if (field === 'name' || field === 'color') patch[field] = value;
+      else if (field === 'hp') patch.hp = Math.max(0, Number(value) || 0);
       playersCol.doc(String(id)).set(patch, { merge: true });
     }
+
     const debounceMap = new Map();
     function changeHP(id, delta) {
       if (!USE_FIREBASE) {
         const player = players.find(p => p.id === id);
-        if (player) { player.hp = Math.max(0, Math.min(player.max, player.hp + delta)); render(); flashPlayer(id, delta > 0 ? 'up' : 'down'); }
+        if (player) {
+          player.hp = Math.max(0, Math.min(player.max, player.hp + delta));
+          render();
+          flashPlayer(id, delta > 0 ? 'up' : 'down');
+        }
         return;
       }
       clearTimeout(debounceMap.get(id));
@@ -212,7 +224,12 @@
     function setHP(id, value) {
       if (!USE_FIREBASE) {
         const player = players.find(p => p.id === id);
-        if (player) { const oldHP = player.hp; player.hp = Math.max(0, Math.min(player.max, Number(value)||0)); render(); if (player.hp !== oldHP) flashPlayer(id, player.hp > oldHP ? 'up' : 'down'); }
+        if (player) {
+          const oldHP = player.hp;
+          player.hp = Math.max(0, Math.min(player.max, Number(value)||0));
+          render();
+          if (player.hp !== oldHP) flashPlayer(id, player.hp > oldHP ? 'up' : 'down');
+        }
         return;
       }
       playersCol.doc(String(id)).get().then(s => {
@@ -242,8 +259,18 @@
       else if (sortMode === 'hpasc') sorted.sort((a, b) => a.hp - b.hp);
       return sorted;
     }
-    function updateTheme() { themeColor = document.getElementById('theme-color')?.value || themeColor; render(); }
-    function toggleFullscreen() { const fs = document.getElementById('fullscreen'); if (fs.classList.contains('active')) { fs.classList.remove('active'); document.exitFullscreen?.(); } else { fs.classList.add('active'); renderFullscreen(); document.documentElement.requestFullscreen?.(); } }
+
+    function toggleFullscreen() {
+      const fs = document.getElementById('fullscreen');
+      if (fs.classList.contains('active')) {
+        fs.classList.remove('active');
+        document.exitFullscreen?.();
+      } else {
+        fs.classList.add('active');
+        renderFullscreen();
+        document.documentElement.requestFullscreen?.();
+      }
+    }
     function flashPlayer(id, direction) { document.querySelectorAll(`[data-player-id="${id}"]`).forEach(c => { c.classList.add(direction==='up'?'flash-up':'flash-down'); setTimeout(()=>c.classList.remove('flash-up','flash-down'), 250); }); }
 
     function renderFullscreen() {
@@ -295,16 +322,17 @@
         `;
       }).join('');
 
+      // EDIT: non-collapsible cards, all visible
       const edit = document.getElementById('edit-stack');
       edit.innerHTML = players.map(p => {
         const percent = Math.round((p.hp / p.max) * 100);
         return `
-          <details class="player-edit" data-player-id="${p.id}">
-            <summary class="edit-summary">
+          <div class="edit-card" data-player-id="${p.id}">
+            <div class="edit-header">
               <span class="pill" style="border-color:${p.color}; color:${p.color}">${percent}%</span>
               <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" />
               <span class="badge">${p.hp}/${p.max}</span>
-            </summary>
+            </div>
 
             <div class="edit-body">
               <div class="row">
@@ -336,7 +364,7 @@
                 </div>
               </div>
             </div>
-          </details>
+          </div>
         `;
       }).join('');
 
