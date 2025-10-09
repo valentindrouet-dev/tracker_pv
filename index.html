@@ -195,6 +195,16 @@
   .edit-card .danger-btn { padding: 4px 8px; }
 }
 
+
+/* UI Step 6.2: Delete button inline with PV Max */
+.edit-card .danger-btn {
+  position: static !important;   /* stop absolute */
+  margin-left: 8px;
+  line-height: 1;
+  padding: 6px 8px;
+  white-space: nowrap;
+}
+
 </style>
 
 <style id="ui-step4-compact-override">
@@ -686,5 +696,66 @@
       window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(console.error); });
     }
   </script>
+
+<script>
+// === Inline delete button next to PV Max (edition cards) ===
+(function(){
+  function alignDeleteNextToMax(card){
+    try{
+      const btn = card.querySelector('.danger-btn');
+      if(!btn) return;
+
+      // Make it emoji-only but accessible
+      btn.textContent = '🗑️';
+      btn.setAttribute('aria-label','Supprimer');
+      btn.title = 'Supprimer';
+
+      // Heuristic: find the PV Max input
+      let maxInput = Array.from(card.querySelectorAll('input[type="number"]')).find(inp => {
+        const name = (inp.name||'') + ' ' + (inp.id||'') + ' ' + (inp.getAttribute('aria-label')||'');
+        const prev = inp.previousElementSibling ? inp.previousElementSibling.textContent||'' : '';
+        return /\bmax\b/i.test(name) || /\bmax\b/i.test(prev);
+      });
+
+      // Fallback: if not found, try a labeled container containing 'Max'
+      if(!maxInput){
+        const maxLabelContainer = Array.from(card.querySelectorAll('*')).find(el => /\bmax\b/i.test(el.textContent||'') && el.querySelector && el.querySelector('input[type="number"]'));
+        if(maxLabelContainer) maxInput = maxLabelContainer.querySelector('input[type="number"]');
+      }
+
+      if(!maxInput) return;
+
+      const row = maxInput.parentElement;
+      // Put the input row into a flex line if not already
+      const prevDisplay = getComputedStyle(row).display;
+      if(prevDisplay !== 'flex' && prevDisplay !== 'inline-flex'){
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '8px';
+      }
+      // Move the button right after the Max input
+      if(btn !== row && btn.parentElement !== row){
+        row.appendChild(btn);
+      }
+    }catch(e){ /* silent */ }
+  }
+
+  function alignAll(){
+    document.querySelectorAll('.edit-card').forEach(alignDeleteNextToMax);
+  }
+
+  // Run on load
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', alignAll);
+  } else {
+    alignAll();
+  }
+
+  // Observe DOM changes to re-align when cards re-render
+  const mo = new MutationObserver(() => { alignAll(); });
+  mo.observe(document.body, { childList: true, subtree: true });
+})();
+</script>
+
 </body>
 </html>
