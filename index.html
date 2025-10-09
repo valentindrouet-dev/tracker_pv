@@ -77,7 +77,7 @@
     .field input[type="number"], .field input[type="text"] { background:transparent; border:0; color:#fff; font-size:1rem; width:100%; outline:none; text-align:center; }
     .color-pick { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border); background: #0f1419; }
 
-    /* 2 lines of keys: 3 columns x 2 rows */
+    /* Buttons: force two lines (3 cols x 2 rows) */
     .big-keys { display:grid; grid-template-columns: repeat(3, 1fr); gap:.5rem; }
     .key { min-height: 52px; border-radius: 12px; font-weight: 900; font-size: 1.05rem; border: 1px solid var(--border); background: #121828; color: #e5e7eb; }
     .key.neg { background: rgba(127,29,29,.55); color: #fecaca; }
@@ -128,20 +128,7 @@
           <button class="btn" onclick="addPlayer()">+ Ajouter</button>
           <button class="btn" onclick="resetAll()">🔄 Réinitialiser</button>
         </div>
-        <div style="margin-top:.6rem; display:grid; grid-template-columns: repeat(3,1fr); gap:.5rem;">
-          <div>
-            <div style="font-size:.85rem; color:var(--muted); margin-bottom:.25rem;">Couleur de thème</div>
-            <input type="color" id="theme-color" value="#63ff8b" onchange="updateTheme()" style="width:100%; height:44px; border:1px solid var(--border); border-radius:10px; background:#0f1419;">
-          </div>
-          <div>
-            <div style="font-size:.85rem; color:var(--muted); margin-bottom:.25rem;">PV actuels</div>
-            <div id="total-hp" style="font-size:1.35rem; font-weight:800;">0</div>
-          </div>
-          <div>
-            <div style="font-size:.85rem; color:var(--muted); margin-bottom:.25rem;">% global</div>
-            <div id="total-percent" style="font-size:1.35rem; font-weight:800;">0%</div>
-          </div>
-        </div>
+        <!-- Removed the 3-info blocks (theme color, totals, %) as requested -->
       </div>
     </section>
   </div>
@@ -255,7 +242,7 @@
       else if (sortMode === 'hpasc') sorted.sort((a, b) => a.hp - b.hp);
       return sorted;
     }
-    function updateTheme() { themeColor = document.getElementById('theme-color').value; render(); }
+    function updateTheme() { themeColor = document.getElementById('theme-color')?.value || themeColor; render(); }
     function toggleFullscreen() { const fs = document.getElementById('fullscreen'); if (fs.classList.contains('active')) { fs.classList.remove('active'); document.exitFullscreen?.(); } else { fs.classList.add('active'); renderFullscreen(); document.documentElement.requestFullscreen?.(); } }
     function flashPlayer(id, direction) { document.querySelectorAll(`[data-player-id="${id}"]`).forEach(c => { c.classList.add(direction==='up'?'flash-up':'flash-down'); setTimeout(()=>c.classList.remove('flash-up','flash-down'), 250); }); }
 
@@ -285,13 +272,7 @@
     }
 
     function render() {
-  // Sauvegarder quels détails sont ouverts
-  const openDetails = new Set();
-  document.querySelectorAll('details.player-edit[open]').forEach(detail => {
-    openDetails.add(detail.getAttribute('data-player-id'));
-  });
-
-  const sorted = getSortedPlayers();
+      const sorted = getSortedPlayers();
       const displayArea = document.getElementById('display-area');
       displayArea.innerHTML = sorted.map(p => {
         const percent = Math.round((p.hp / p.max) * 100);
@@ -314,11 +295,11 @@
         `;
       }).join('');
 
+      const edit = document.getElementById('edit-stack');
       edit.innerHTML = players.map(p => {
-  const percent = Math.round((p.hp / p.max) * 100);
-  const isOpen = openDetails.has(String(p.id));  // ← AJOUTER CETTE LIGNE
-  return `
-          <details class="player-edit" data-player-id="${p.id}" ${isOpen ? 'open' : ''}>
+        const percent = Math.round((p.hp / p.max) * 100);
+        return `
+          <details class="player-edit" data-player-id="${p.id}">
             <summary class="edit-summary">
               <span class="pill" style="border-color:${p.color}; color:${p.color}">${percent}%</span>
               <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" />
@@ -337,7 +318,6 @@
                 </div>
               </div>
 
-              <!-- Two-line keys: 3 columns x 2 rows -->
               <div class="big-keys">
                 <button class="key neg" onclick="changeHP(${p.id}, -10)" type="button">-10</button>
                 <button class="key neg" onclick="changeHP(${p.id}, -5)" type="button">-5</button>
@@ -360,11 +340,6 @@
         `;
       }).join('');
 
-      const totalHP = players.reduce((sum, p) => sum + Math.min(p.hp, p.max), 0);
-      const totalMax = players.reduce((sum, p) => sum + p.max, 0);
-      document.getElementById('total-hp').textContent = totalHP;
-      document.getElementById('total-percent').textContent = totalMax ? Math.round((totalHP / totalMax) * 100) + '%' : '0%';
-
       saveData();
 
       const fs = document.getElementById('fullscreen');
@@ -386,7 +361,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
   <script>
     if (window.firebase && true) {
-      // Use the original, correct Firebase config as provided earlier
       const firebaseConfig = {
         apiKey: "AIzaSyBRdDQ6SfPrwU1pT-m2DEdL1RuSIRd3uZ8",
         authDomain: "hpbars-4bd0e.firebaseapp.com",
