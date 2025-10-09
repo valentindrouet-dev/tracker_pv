@@ -242,7 +242,7 @@
 <!-- NON-DESTRUCTIVE UI OVERRIDES -->
 <style id="ui-rescue-overrides">
 /* 1) Hide any PV / Max inline fields in the header (we keep name, color, badge) */
-.edit-card .edit-header .inline-field{ display:none !important; }
+/* (replaced by JS that hides only the PV field) */
 /* 2) Hide legacy bottom delete buttons (any button that calls removePlayer but isn't our new header delete) */
 .edit-card [onclick*="removePlayer"]:not(.btn-delete){ display:none !important; }
 /* 3) PV center: bold + size & padding to visually match keys */
@@ -676,5 +676,37 @@
       window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(console.error); });
     }
   </script>
+
+<script id="ui-rescue-inline-field-filter">
+(function(){
+  function filterInlineFields(){
+    document.querySelectorAll('.edit-card .edit-header').forEach(function(header){
+      var fields = header.querySelectorAll('.inline-field');
+      fields.forEach(function(f){
+        var txt = f.textContent || '';
+        if (/\bmax\b/i.test(txt)) {
+          // Keep the Max field visible and move it just before the header-actions (trash)
+          f.style.display = '';
+          var actions = header.querySelector('.header-actions');
+          if (actions && actions.parentNode === header) {
+            header.insertBefore(f, actions);
+          }
+        } else {
+          // Likely the PV current field: hide it
+          f.style.display = 'none';
+        }
+      });
+    });
+  }
+  function ready(fn){ if(document.readyState!=='loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
+  ready(function(){
+    filterInlineFields();
+    // Re-apply on mutations to survive re-render
+    const obs = new MutationObserver(filterInlineFields);
+    obs.observe(document.body, {subtree:true, childList:true});
+  });
+})();
+</script>
+
 </body>
 </html>
