@@ -179,7 +179,7 @@
 }
 
 
-/* UI Step 6.1: Reserve space so the top-right delete button doesn't overlap fields */
+/* removed UI Step 6.1 padding */
 .edit-card { position: relative; padding-top: 48px; } /* room for the absolute delete button */
 .edit-card .danger-btn {
   position: absolute;
@@ -196,9 +196,19 @@
 }
 
 
-/* UI Step 6.2: Delete button inline with PV Max */
+/* removed UI Step 6.2 override */
 .edit-card .danger-btn {
   position: static !important;   /* stop absolute */
+  margin-left: 8px;
+  line-height: 1;
+  padding: 6px 8px;
+  white-space: nowrap;
+}
+
+
+/* UI Fix: Keep delete button inline-friendly and compact (no absolute positioning) */
+.edit-card .danger-btn {
+  position: static !important;
   margin-left: 8px;
   line-height: 1;
   padding: 6px 8px;
@@ -697,63 +707,74 @@
     }
   </script>
 
+<!-- removed previous inline-move script -->
+
+
 <script>
-// === Inline delete button next to PV Max (edition cards) ===
 (function(){
-  function alignDeleteNextToMax(card){
+  function moveDeleteNextToMax(card){
     try{
       const btn = card.querySelector('.danger-btn');
       if(!btn) return;
-
-      // Make it emoji-only but accessible
+      // Emoji-only + accessibility
       btn.textContent = '🗑️';
       btn.setAttribute('aria-label','Supprimer');
       btn.title = 'Supprimer';
 
-      // Heuristic: find the PV Max input
-      let maxInput = Array.from(card.querySelectorAll('input[type="number"]')).find(inp => {
+      // Find a number input that looks like "Max"
+      const inputs = Array.from(card.querySelectorAll('input[type="number"]'));
+      let maxInput = null;
+      for (const inp of inputs){
         const name = (inp.name||'') + ' ' + (inp.id||'') + ' ' + (inp.getAttribute('aria-label')||'');
-        const prev = inp.previousElementSibling ? inp.previousElementSibling.textContent||'' : '';
-        return /\bmax\b/i.test(name) || /\bmax\b/i.test(prev);
-      });
-
-      // Fallback: if not found, try a labeled container containing 'Max'
-      if(!maxInput){
-        const maxLabelContainer = Array.from(card.querySelectorAll('*')).find(el => /\bmax\b/i.test(el.textContent||'') && el.querySelector && el.querySelector('input[type="number"]'));
-        if(maxLabelContainer) maxInput = maxLabelContainer.querySelector('input[type="number"]');
+        const labelText = (inp.closest('label')?.textContent||'') + ' ' + (inp.previousElementSibling?.textContent||'');
+        if (/\bmax\b/i.test(name) || /\bmax\b/i.test(labelText)){
+          maxInput = inp;
+          break;
+        }
       }
-
       if(!maxInput) return;
 
-      const row = maxInput.parentElement;
-      // Put the input row into a flex line if not already
-      const prevDisplay = getComputedStyle(row).display;
-      if(prevDisplay !== 'flex' && prevDisplay !== 'inline-flex'){
-        row.style.display = 'flex';
-        row.style.alignItems = 'center';
-        row.style.gap = '8px';
+      // Insert a spacer span right after the input and move the button there
+      const span = document.createElement('span');
+      span.className = 'inline-delete-slot';
+      span.style.display = 'inline-flex';
+      span.style.alignItems = 'center';
+      span.style.marginLeft = '8px';
+
+      // If nextSibling is already our slot, skip
+      if(!(maxInput.nextSibling && maxInput.nextSibling.classList && maxInput.nextSibling.classList.contains('inline-delete-slot'))){
+        maxInput.insertAdjacentElement('afterend', span);
+      } else {
+        // reuse existing slot
+        const existing = maxInput.nextSibling;
+        existing.innerHTML = '';
+        existing.appendChild(btn);
+        return;
       }
-      // Move the button right after the Max input
-      if(btn !== row && btn.parentElement !== row){
-        row.appendChild(btn);
-      }
-    }catch(e){ /* silent */ }
+      span.appendChild(btn);
+    }catch(e){ /* noop */ }
   }
 
   function alignAll(){
-    document.querySelectorAll('.edit-card').forEach(alignDeleteNextToMax);
+    document.querySelectorAll('.edit-card').forEach(moveDeleteNextToMax);
   }
 
-  // Run on load
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', alignAll);
+  // Run once after content settles
+  const boot = () => setTimeout(alignAll, 50);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', boot);
   } else {
-    alignAll();
+    boot();
   }
 
-  // Observe DOM changes to re-align when cards re-render
-  const mo = new MutationObserver(() => { alignAll(); });
-  mo.observe(document.body, { childList: true, subtree: true });
+  // Try again on simple nav toggles if they exist
+  document.addEventListener('click', function(e){
+    const t = e.target;
+    if(!t) return;
+    if (t.matches('[data-tab], [data-view], .btn, button')) {
+      setTimeout(alignAll, 50);
+    }
+  });
 })();
 </script>
 
