@@ -238,6 +238,37 @@
 }
 </style>
 
+
+<style id="ui-restore-step5-and-trash">
+/* Keep step5 grid as-is; only add header alignment + sr-only */
+.edit-card .edit-header{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:.5rem;
+}
+.edit-card .edit-header .header-actions{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+}
+.edit-card .edit-header .btn-delete{
+  padding:.3rem .45rem;
+  line-height:1;
+}
+.sr-only{
+  position:absolute !important;
+  width:1px !important;
+  height:1px !important;
+  padding:0 !important;
+  margin:-1px !important;
+  overflow:hidden !important;
+  clip:rect(0,0,0,0) !important;
+  white-space:nowrap !important;
+  border:0 !important;
+}
+</style>
+
 </head>
 <body>
   <div class="topbar">
@@ -528,7 +559,14 @@
               <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" /><div class="inline-field">
                 <label>Max</label>
                 <input type="number" value="${p.max}" min="1" onchange="updatePlayer(${p.id}, 'max', parseInt(this.value))">
-              </div>
+              
+      <div class="header-actions">
+        <button class="btn btn-danger btn-delete" type="button"
+                onclick="confirmAndRemove(${p.id}, ${JSON.stringify(p.name)})">
+          <span aria-hidden="true">🗑️</span><span class="sr-only">Supprimer</span>
+        </button>
+      </div>
+    </div>
               <span class="badge">${p.hp}/${p.max}</span>
             </div>
 
@@ -546,8 +584,7 @@
 </div>
 
               <div style="display:flex; justify-content:flex-end;">
-  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')">🗑️ Supprimer</button>
-</div>
+  </div>
             </div>
           </div>
         `;
@@ -608,5 +645,19 @@
       window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(console.error); });
     }
   </script>
+
+<script id="confirm-remove-helper">
+function confirmAndRemove(id, name){
+  try{
+    const msg = `Supprimer ${name} ?`;
+    if (window.confirm(msg)) {
+      removePlayer(id, msg);
+    }
+  }catch(e){
+    console.error('Confirm remove failed:', e);
+  }
+}
+</script>
+
 </body>
 </html>
