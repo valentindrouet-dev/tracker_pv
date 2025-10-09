@@ -799,16 +799,6 @@
     }
 
     function render() {
-  // ... tout ton code de rendu (display-area, edit-area, stats, saveData)
-
-  saveData();
-
-  // ⬇️ Ajoute ceci :
-  const fs = document.getElementById('fullscreen');
-  if (fs && fs.classList.contains('active')) {
-    renderFullscreen();
-  }
-}
       const sorted = getSortedPlayers();
       
       // Display area
