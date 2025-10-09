@@ -205,6 +205,39 @@
 }
 </style>
 
+
+<style id="ui-step5-grid-equal-width">
+/* --- STEP5: full-width single row, equal button widths, PV slightly wider --- */
+.edit-card .big-keys{
+  display:grid !important;
+  grid-template-columns: repeat(4, 1fr) 1.25fr repeat(4, 1fr) !important;
+  gap:.32rem !important;
+  align-items:center !important;
+  width:100% !important;
+}
+.edit-card .big-keys .key,
+.edit-card .big-keys button{
+  width:100% !important;
+  min-width:0 !important;
+  padding:.4rem .3rem !important;
+  font-size:.9rem !important;
+  line-height:1.1 !important;
+  border-radius:.5rem !important;
+  white-space:nowrap !important;
+}
+.edit-card .big-keys .pv-center{
+  width:100% !important;   /* take the full 1.25fr cell */
+  padding:.35rem .45rem !important;
+  font-size:1rem !important;  /* slightly larger for readability */
+  text-align:center !important;
+}
+@media (max-width: 420px){
+  .edit-card .big-keys{ gap:.24rem !important; grid-template-columns: repeat(4, 1fr) 1.2fr repeat(4, 1fr) !important; }
+  .edit-card .big-keys .key, .edit-card .big-keys button{ font-size:.85rem !important; padding:.34rem .28rem !important; }
+  .edit-card .big-keys .pv-center{ font-size:.95rem !important; }
+}
+</style>
+
 </head>
 <body>
   <div class="topbar">
