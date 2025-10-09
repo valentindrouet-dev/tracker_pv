@@ -405,8 +405,8 @@
               <div style="display:grid; grid-template-columns: auto 1fr; gap:.4rem; align-items:center;">
                 <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)">
                 <div style="display:flex; gap:.4rem; justify-content: flex-end; flex-wrap:wrap;">
-                  <button class="danger-btn" type="button" onclick="setHP(${p.id}, 0)">Dead</button>
-                  <button class="btn" type="button" onclick="setHP(${p.id}, ${p.max})">Full</button>
+                  <button class="danger-btn" type="button" onclick="setHP(${p.id}, 0)">☠️</button>
+                  <button class="btn" type="button" onclick="setHP(${p.id}, ${p.max})">💚</button>
                   <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')">🗑️ Supprimer</button>
                 </div>
               </div>
