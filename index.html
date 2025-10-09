@@ -145,11 +145,11 @@
     }
 
     const defaultPlayers = [
-      { id: 1, name: "Alchimiste", hp: 32, max: 50, color: "#4a6edb", statuses: [] },
-      { id: 2, name: "Destructeur", hp: 48, max: 50, color: "#c13b3b", statuses: [] },
-      { id: 3, name: "Pyromane", hp: 20, max: 50, color: "#e6a500", statuses: [] },
-      { id: 4, name: "Déviant", hp: 24, max: 50, color: "#c07ce6", statuses: [] },
-      { id: 5, name: "Lamevent", hp: 28, max: 50, color: "#60a853", statuses: [] }
+      { id: 1, name: "Alchimiste", hp: 32, max: 50, color: "#4a6edb" },
+      { id: 2, name: "Destructeur", hp: 48, max: 50, color: "#c13b3b" },
+      { id: 3, name: "Pyromane", hp: 20, max: 50, color: "#e6a500" },
+      { id: 4, name: "Déviant", hp: 24, max: 50, color: "#c07ce6" },
+      { id: 5, name: "Lamevent", hp: 28, max: 50, color: "#60a853" }
     ];
 
     let players = [];
@@ -174,7 +174,6 @@
         nextId = 6;
         return render();
       }
-      // Danger: clear room; keep it simple: set to defaults sequentially
       const batch = db.batch();
       const snap = await playersCol.get();
       snap.forEach(doc => batch.delete(doc.ref));
@@ -186,39 +185,46 @@
     }
 
     function addPlayer() {
-      if (!USE_FIREBASE) { players.push({ id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", statuses: [] }); return render(); }
-      const p = { id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", statuses: [], updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      if (!USE_FIREBASE) { players.push({ id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af" }); return render(); }
+      const p = { id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
       playersCol.doc(String(p.id)).set(p, { merge: true });
     }
 
-    async function removePlayer(refOrId) {
-      if (!USE_FIREBASE) {
-        // local remove by id
-        const targetId = typeof refOrId === 'string' ? Number(refOrId) : refOrId;
-        players = players.filter(p => p.id !== targetId);
-        return render();
-      }
-      // Prefer direct docId if it looks like a Firestore ID (non purely numeric or exists)
-      const maybeId = String(refOrId);
+    async function removePlayer(id, docId) {
+      // Optimistic UI
+      players = players.filter(p => p.id !== id);
+      render();
+
+      if (!USE_FIREBASE) return;
+
       try {
-        const tryDoc = await playersCol.doc(maybeId).get();
-        if (tryDoc.exists) {
-          await playersCol.doc(maybeId).delete();
+        if (docId) {
+          await playersCol.doc(docId).delete();
           return;
         }
       } catch (e) {
-        // ignore and fallback
+        console.warn('Delete by docId failed, fallback to query', e);
       }
-      // Fallback: find by field 'id'
-      const numeric = Number(refOrId);
-      if (!Number.isNaN(numeric)) {
-        const q = await playersCol.where('id', '==', numeric).limit(1).get();
+      try {
+        const q = await playersCol.where('id', '==', id).limit(1).get();
         if (!q.empty) {
           await q.docs[0].ref.delete();
           return;
         }
+      } catch (e) {
+        console.warn('Delete by id query failed, fallback flag', e);
       }
-      console.warn('Suppression introuvable pour', refOrId);
+      // Fallback: hide by flag
+      try {
+        if (docId) {
+          await playersCol.doc(docId).set({ __deleted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        } else {
+          const q2 = await playersCol.where('id','==', id).limit(1).get();
+          if (!q2.empty) await q2.docs[0].ref.set({ __deleted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        }
+      } catch (e) {
+        console.error('Failed to flag as deleted', e);
+      }
     }
 
     function updatePlayer(id, field, value) {
@@ -369,7 +375,7 @@
         `;
       }).join('');
 
-      // EDIT: non-collapsible cards, include p._docId awareness for delete
+      // EDIT: non-collapsible cards
       const edit = document.getElementById('edit-stack');
       edit.innerHTML = players.map(p => {
         const percent = Math.round((p.hp / p.max) * 100);
@@ -408,7 +414,7 @@
                 <div style="display:flex; gap:.5rem; justify-content: flex-end;">
                   <button class="danger-btn" type="button" onclick="setHP(${p.id}, 0)">Dead</button>
                   <button class="btn" type="button" onclick="setHP(${p.id}, ${p.max})">Full</button>
-                  <button class="danger-btn" type="button" onclick="removePlayer('${docId}')">🗑️ Supprimer</button>
+                  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')">🗑️ Supprimer</button>
                 </div>
               </div>
             </div>
@@ -457,7 +463,9 @@
       window.playersCol = db.collection('rooms').doc(ROOM_ID).collection('players');
 
       playersCol.orderBy('id').onSnapshot((snap) => {
-        players = snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
+        players = snap.docs
+          .map(d => ({ ...d.data(), _docId: d.id }))
+          .filter(p => !p.__deleted);
         nextId = players.length ? Math.max(...players.map(p => p.id)) + 1 : 1;
         render();
       });
