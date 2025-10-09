@@ -15,7 +15,30 @@
 
   <style>
     
-    /* Center PV input between - and + keys */
+    
+/* --- STEP2: single-row controls between ☠️ and 💚 --- */
+.big-keys{
+  display:flex;
+  flex-wrap:nowrap;   /* force a single line */
+  gap:.32rem;
+  align-items:center;
+  justify-content:center;
+}
+.big-keys .key{
+  padding:.45rem .6rem;
+  min-width:auto;
+  line-height:1;
+  border-radius:.6rem;
+}
+.pv-center{
+  width:4.5rem; /* slightly narrower to help fit one row */
+}
+@media (max-width: 420px){
+  .big-keys .key{ padding:.4rem .5rem; }
+  .pv-center{ width:4rem; }
+}
+
+/* Center PV input between - and + keys */
     .pv-center{
       width: 5rem;
       text-align: center;
@@ -399,12 +422,7 @@
           <div class="edit-card" data-player-id="${p.id}">
             <div class="edit-header">
               <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)">
-              <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" />
-              <div class="inline-field">
-                <label>PV</label>
-                <input type="number" value="${p.hp}" onchange="setHP(${p.id}, parseInt(this.value))">
-              </div>
-              <div class="inline-field">
+              <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" /><div class="inline-field">
                 <label>Max</label>
                 <input type="number" value="${p.max}" min="1" onchange="updatePlayer(${p.id}, 'max', parseInt(this.value))">
               </div>
