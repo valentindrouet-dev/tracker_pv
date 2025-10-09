@@ -14,7 +14,26 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png">
 
   <style>
-    :root {
+    
+    /* Center PV input between - and + keys */
+    .pv-center{
+      width: 5rem;
+      text-align: center;
+      background: #0f1419;
+      color: #e5e7eb;
+      border: 1px solid var(--border);
+      border-radius: .5rem;
+      padding: .4rem .5rem;
+    }
+    .big-keys{
+      display:flex;
+      gap:.4rem;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:center;
+    }
+
+:root {
       --bg: #0a0e1a;
       --panel: rgba(26,31,46,0.9);
       --panel-plain: #1a1f2e;
@@ -379,7 +398,7 @@
         return `
           <div class="edit-card" data-player-id="${p.id}">
             <div class="edit-header">
-              <span class="pill" style="border-color:${p.color}; color:${p.color}">${percent}%</span>
+              <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)">
               <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" />
               <div class="inline-field">
                 <label>PV</label>
@@ -394,22 +413,20 @@
 
             <div class="edit-body">
               <div class="big-keys">
-                <button class="key neg" onclick="changeHP(${p.id}, -10)" type="button">-10</button>
-                <button class="key neg" onclick="changeHP(${p.id}, -5)" type="button">-5</button>
-                <button class="key neg" onclick="changeHP(${p.id}, -1)" type="button">-1</button>
-                <button class="key pos" onclick="changeHP(${p.id}, 1)" type="button">+1</button>
-                <button class="key pos" onclick="changeHP(${p.id}, 5)" type="button">+5</button>
-                <button class="key pos" onclick="changeHP(${p.id}, 10)" type="button">+10</button>
-              </div>
+  <button class="key neg" onclick="setHP(${p.id}, 0)" type="button">☠️</button>
+  <button class="key neg" onclick="changeHP(${p.id}, -10)" type="button">-10</button>
+  <button class="key neg" onclick="changeHP(${p.id}, -5)" type="button">-5</button>
+  <button class="key neg" onclick="changeHP(${p.id}, -1)" type="button">-1</button>
+  <input class="pv-center" type="number" value="${p.hp}" min="0" max="${p.max}" onchange="setHP(${p.id}, parseInt(this.value)||0)">
+  <button class="key pos" onclick="changeHP(${p.id}, 1)" type="button">+1</button>
+  <button class="key pos" onclick="changeHP(${p.id}, 5)" type="button">+5</button>
+  <button class="key pos" onclick="changeHP(${p.id}, 10)" type="button">+10</button>
+  <button class="key pos" onclick="setHP(${p.id}, ${p.max})" type="button">💚</button>
+</div>
 
-              <div style="display:grid; grid-template-columns: auto 1fr; gap:.4rem; align-items:center;">
-                <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)">
-                <div style="display:flex; gap:.4rem; justify-content: flex-end; flex-wrap:wrap;">
-                  <button class="danger-btn" type="button" onclick="setHP(${p.id}, 0)">☠️</button>
-                  <button class="btn" type="button" onclick="setHP(${p.id}, ${p.max})">💚</button>
-                  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')">🗑️ Supprimer</button>
-                </div>
-              </div>
+              <div style="display:flex; justify-content:flex-end;">
+  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')">🗑️ Supprimer</button>
+</div>
             </div>
           </div>
         `;
