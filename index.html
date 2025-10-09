@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tableau des Points de Vie</title>
+
+  <!-- PWA: meta & manifest -->
+  <meta name="theme-color" content="#0a0e1a">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="PV Tracker">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
@@ -930,6 +939,14 @@
         players = snap.docs.map(d => d.data());
         nextId = players.length ? Math.max(...players.map(p => p.id)) + 1 : 1;
         render();
+      });
+    }
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(console.error);
       });
     }
   </script>
