@@ -242,6 +242,38 @@
   100% { opacity: 0; transform: scale(1); }
 }
 
+
+/* UI 6.7: DEAD style when HP == 0 */
+.hp-bar-container.dead{
+  position: relative;
+  background: repeating-linear-gradient(
+      -45deg,
+      rgba(120,0,0,0.35) 0,
+      rgba(120,0,0,0.35) 12px,
+      rgba(80,0,0,0.35) 12px,
+      rgba(80,0,0,0.35) 24px
+  ) !important;
+  box-shadow: inset 0 0 0 2px rgba(120,0,0,0.35), inset 0 4px 6px rgba(0,0,0,0.45);
+}
+.hp-bar-container.dead::after{
+  content: "☠️";
+  position:absolute;
+  inset: 0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: #ff6b6b;
+  text-shadow: 0 1px 0 rgba(0,0,0,0.6);
+  pointer-events:none;
+}
+.hp-bar-container.dead .hp-bar{
+  background: transparent !important;
+  color: transparent !important;
+  width: 100% !important;   /* so the capsule keeps same height/rounding */
+}
+
 </style>
 
 <style id="ui-step4-compact-override">
@@ -831,6 +863,47 @@
     if (isNeg) return flashBtn(btn, 'btn-flash-neg');
     if (isPos) return flashBtn(btn, 'btn-flash-pos');
   }, true);
+})();
+</script>
+
+
+<script>
+// UI 6.7: Toggle 'dead' style on hp bars when width is 0%
+(function(){
+  function updateDeadStates(root=document){
+    document.querySelectorAll('.hp-bar').forEach(el=>{
+      const cont = el.closest('.hp-bar-container');
+      if(!cont) return;
+
+      // read inline width percentage if present
+      let w = 0;
+      const styleWidth = (el.getAttribute('style')||'').match(/width:\s*([0-9.]+)%/);
+      if (styleWidth) w = parseFloat(styleWidth[1]);
+
+      // Fallback: computed width
+      if (!styleWidth){
+        const cw = el.getBoundingClientRect().width;
+        w = cw < 2 ? 0 : 1; // treat ultra thin as zero
+      }
+
+      if (w <= 0) cont.classList.add('dead');
+      else cont.classList.remove('dead');
+    });
+  }
+
+  // Run at load and on DOM changes
+  const boot = () => requestAnimationFrame(updateDeadStates);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+
+  const mo = new MutationObserver(()=> requestAnimationFrame(updateDeadStates));
+  mo.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['style']});
+
+  // Also re-check when window resizes (rarely needed but safe)
+  window.addEventListener('resize', ()=> requestAnimationFrame(updateDeadStates));
+
+  // Expose manual hook
+  window.__refreshHpDeadStates = updateDeadStates;
 })();
 </script>
 
