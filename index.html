@@ -174,56 +174,52 @@
         nextId = 6;
         return render();
       }
-      const batch = db.batch();
-      const snap = await playersCol.get();
-      snap.forEach(doc => batch.delete(doc.ref));
-      defaultPlayers.forEach(p => {
-        const ref = playersCol.doc(String(p.id));
-        batch.set(ref, { ...p, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
-      });
-      await batch.commit();
+      try {
+        const snap = await playersCol.get();
+        const batch1 = db.batch();
+        snap.forEach(doc => {
+          batch1.set(doc.ref, { __deleted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        });
+        await batch1.commit();
+
+        const batch2 = db.batch();
+        defaultPlayers.forEach(p => {
+          const ref = playersCol.doc(String(p.id));
+          batch2.set(ref, { ...p, __deleted: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        });
+        await batch2.commit();
+      } catch (e) {
+        console.error('resetAll failed', e);
+      }
     }
 
     function addPlayer() {
       if (!USE_FIREBASE) { players.push({ id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af" }); return render(); }
-      const p = { id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      const p = { id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", __deleted: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
       playersCol.doc(String(p.id)).set(p, { merge: true });
     }
 
     async function removePlayer(id, docId) {
-      // Optimistic UI
+      // UI optimiste
       players = players.filter(p => p.id !== id);
       render();
 
       if (!USE_FIREBASE) return;
-
       try {
         if (docId) {
-          await playersCol.doc(docId).delete();
+          await playersCol.doc(docId).set({ __deleted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
           return;
         }
       } catch (e) {
-        console.warn('Delete by docId failed, fallback to query', e);
+        console.warn('soft delete by docId failed, fallback to query', e);
       }
       try {
         const q = await playersCol.where('id', '==', id).limit(1).get();
         if (!q.empty) {
-          await q.docs[0].ref.delete();
-          return;
+          await q.docs[0].ref.set({ __deleted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
         }
       } catch (e) {
-        console.warn('Delete by id query failed, fallback flag', e);
-      }
-      // Fallback: hide by flag
-      try {
-        if (docId) {
-          await playersCol.doc(docId).set({ __deleted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-        } else {
-          const q2 = await playersCol.where('id','==', id).limit(1).get();
-          if (!q2.empty) await q2.docs[0].ref.set({ __deleted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-        }
-      } catch (e) {
-        console.error('Failed to flag as deleted', e);
+        console.error('soft delete by id failed', e);
       }
     }
 
