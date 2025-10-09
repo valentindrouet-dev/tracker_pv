@@ -184,6 +184,29 @@
   transition: background-color 120ms ease, box-shadow 120ms ease;
 }
 
+
+/* UI 6.9: phase-based theming for HP bar containers (+ robust DEAD skull) */
+.hp-bar-container{ position:relative; transition: background-color 140ms ease, box-shadow 140ms ease; }
+.hp-bar{ position:relative; z-index:0; } /* ensure ::after (skull) can sit above when needed */
+
+.hp-bar-container.phase-green   { background: rgba(20,60,40,0.28) !important;  box-shadow: inset 0 0 0 2px rgba(40,120,80,0.45) !important, inset 0 3px 6px rgba(0,0,0,0.35) !important; }
+.hp-bar-container.phase-yellow  { background: rgba(90,80,20,0.22) !important;  box-shadow: inset 0 0 0 2px rgba(200,170,40,0.42) !important, inset 0 3px 6px rgba(0,0,0,0.35) !important; }
+.hp-bar-container.phase-orange  { background: rgba(110,60,15,0.24) !important; box-shadow: inset 0 0 0 2px rgba(220,120,40,0.42) !important, inset 0 3px 6px rgba(0,0,0,0.35) !important; }
+.hp-bar-container.phase-red     { background: rgba(80,20,20,0.26) !important;  box-shadow: inset 0 0 0 2px rgba(200,60,60,0.48)  !important, inset 0 3px 6px rgba(0,0,0,0.38) !important; }
+.hp-bar-container.phase-black   { background: #0b0f14 !important;               box-shadow: inset 0 2px 4px rgba(0,0,0,.35) !important; }
+
+/* DEAD: empty capsule + centered skull, always visible */
+.hp-bar-container.dead { background: #0b0f14 !important; box-shadow: inset 0 2px 4px rgba(0,0,0,.35) !important; }
+.hp-bar-container.dead .hp-bar{ background: transparent !important; color: transparent !important; width: 0 !important; }
+.hp-bar-container.dead::after{
+  content:"☠️";
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  z-index: 1;
+  color:#d9d9d9; text-shadow:0 1px 0 rgba(0,0,0,.55);
+  pointer-events:none;
+}
+
 </style>
 
 <style id="ui-step4-compact-override">
@@ -725,6 +748,75 @@
   mo.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['style']});
   window.addEventListener('resize', ()=> requestAnimationFrame(applyAll));
   window.__applyHpContainerTheme = applyAll;
+})();
+</script>
+
+
+<script>
+// UI 6.9: class-based theming for HP bar containers (keeps skull at 0, no green border leaks)
+(function(){
+  function percentFrom(el){
+    const m = (el.getAttribute('style')||'').match(/width:\s*([0-9.]+)%/);
+    if (m) return parseFloat(m[1]);
+    const cont = el.closest('.hp-bar-container');
+    if (!cont) return 0;
+    const w = el.getBoundingClientRect().width;
+    const cw = cont.getBoundingClientRect().width || 1;
+    return Math.max(0, Math.min(100, (w/cw)*100));
+  }
+
+  function setPhase(cont, pct){
+    cont.classList.remove('phase-green','phase-yellow','phase-orange','phase-red','phase-black','dead');
+    if (pct <= 0.01) {
+      cont.classList.add('phase-black','dead');
+      return;
+    }
+    if (pct >= 67)      cont.classList.add('phase-green');
+    else if (pct >= 41) cont.classList.add('phase-yellow');
+    else if (pct >= 16) cont.classList.add('phase-orange');
+    else                cont.classList.add('phase-red');
+  }
+
+  function applyAll(){
+    document.querySelectorAll('.hp-bar').forEach(el => {
+      const cont = el.closest('.hp-bar-container');
+      if (!cont) return;
+      const pct = percentFrom(el);
+      setPhase(cont, pct);
+    });
+  }
+
+  const boot = () => requestAnimationFrame(applyAll);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+
+  const mo = new MutationObserver(()=> requestAnimationFrame(applyAll));
+  mo.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['style']});
+  window.addEventListener('resize', ()=> requestAnimationFrame(applyAll));
+  window.__applyHpContainerPhase = applyAll;
+})();
+</script>
+
+
+<script>
+// UI 6.6: flash feedback on +/- buttons (button only)
+(function(){
+  const flashBtn = (btn, cls, dur=300) => {
+    if(!btn) return;
+    btn.classList.remove(cls);
+    void btn.offsetWidth;
+    btn.classList.add(cls);
+    setTimeout(()=> btn.classList.remove(cls), dur);
+  };
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest('.key, button.key');
+    if (!btn) return;
+    const txt = (btn.textContent || "").trim();
+    const isNeg = btn.classList.contains('neg') || /^-\d+/.test(txt) || txt.includes('☠');
+    const isPos = btn.classList.contains('pos') || /^\+\d+/.test(txt) || txt.includes('💚');
+    if (isNeg) return flashBtn(btn, 'btn-flash-neg');
+    if (isPos) return flashBtn(btn, 'btn-flash-pos');
+  }, true);
 })();
 </script>
 
