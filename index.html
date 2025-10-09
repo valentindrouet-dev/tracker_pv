@@ -239,65 +239,72 @@
 </style>
 
 
-<style id="ui-restore-step5-and-trash">
-/* Keep step5 grid as-is; only add header alignment + sr-only */
-.edit-card .edit-header{
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  gap:.5rem;
-}
-.edit-card .edit-header .header-actions{
-  margin-left:auto;
-  display:flex;
-  align-items:center;
-}
-.edit-card .edit-header .btn-delete{
-  padding:.3rem .45rem;
-  line-height:1;
-}
-.sr-only{
-  position:absolute !important;
-  width:1px !important;
-  height:1px !important;
-  padding:0 !important;
-  margin:-1px !important;
-  overflow:hidden !important;
-  clip:rect(0,0,0,0) !important;
-  white-space:nowrap !important;
-  border:0 !important;
-}
-</style>
-
-
-<style id="ui-fix-header-and-pv-strong">
-/* Header layout (keeps step5 grid intact elsewhere) */
-.edit-card .edit-header{
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  gap:.5rem;
-}
-.edit-card .edit-header .header-actions{
-  margin-left:auto;
-  display:flex;
-  align-items:center;
-}
-.edit-card .edit-header .btn-delete{
-  padding:.3rem .45rem;
-  line-height:1;
-}
-
-/* PV center emphasis & sizing to match keys */
+<!-- NON-DESTRUCTIVE UI OVERRIDES -->
+<style id="ui-rescue-overrides">
+/* 1) Hide any PV / Max inline fields in the header (we keep name, color, badge) */
+.edit-card .edit-header .inline-field{ display:none !important; }
+/* 2) Hide legacy bottom delete buttons (any button that calls removePlayer but isn't our new header delete) */
+.edit-card [onclick*="removePlayer"]:not(.btn-delete){ display:none !important; }
+/* 3) PV center: bold + size & padding to visually match keys */
 .edit-card .big-keys .pv-center{
+  font-weight:700 !important;
+  font-size:1.05rem !important;
+  padding:.45rem .5rem !important;
+  line-height:1.1 !important;
+  border-radius:.5rem !important;
   width:100% !important;
-  font-weight:700;
-  font-size:1.05rem;
-  padding:.45rem .5rem;
-  line-height:1.1;
-  border-radius:.5rem;
 }
 </style>
+
+<script id="ui-rescue-inject-trash">
+// Inject a trash button into each edit-card header, with confirmation, without touching existing logic
+(function(){
+  function ensureConfirmHelper(){
+    if (window.confirmAndRemoveInjected) return;
+    window.confirmAndRemoveInjected = true;
+    window.confirmAndRemove = function(id, name){
+      try{
+        const msg = name ? `Supprimer ${name} ?` : 'Supprimer ce joueur ?';
+        if (window.confirm(msg)) removePlayer(Number(id), msg);
+      }catch(e){ console.error('Confirm remove failed:', e); }
+    };
+  }
+  function injectTrash(){
+    document.querySelectorAll('.edit-card .edit-header').forEach(function(header){
+      if (header.querySelector('.btn-delete')) return; // already injected
+      // Try to resolve the player id & name from the closest edit-card attributes/text
+      const card = header.closest('.edit-card');
+      let id = card && (card.dataset.playerId || card.getAttribute('data-player-id') || card.dataset.id || card.getAttribute('data-id'));
+      // Fallback: try to parse from header innerHTML if needed (last resort)
+      if (!id) id = (card && card.id) || 0;
+      let nameInput = header.querySelector('.edit-name');
+      let name = nameInput ? nameInput.value : (header.querySelector('.badge')?.textContent || '').trim();
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-danger btn-delete';
+      btn.type = 'button';
+      btn.innerHTML = '<span aria-hidden="true">🗑️</span><span class="sr-only">Supprimer</span>';
+      btn.onclick = function(){ ensureConfirmHelper(); window.confirmAndRemove(id, name); };
+      // Push to right edge
+      const wrap = document.createElement('div');
+      wrap.className = 'header-actions';
+      wrap.style.marginLeft = 'auto';
+      wrap.style.display = 'flex';
+      wrap.style.alignItems = 'center';
+      wrap.appendChild(btn);
+      header.appendChild(wrap);
+    });
+  }
+  // Run after DOM is ready; also after UI rerenders (simple interval guard)
+  function ready(fn){ if(document.readyState!=='loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
+  ready(function(){
+    injectTrash();
+    // Re-inject after 300ms to catch any render(), then observe mutations lightly
+    setTimeout(injectTrash, 300);
+    const obs = new MutationObserver(function(){ injectTrash(); });
+    obs.observe(document.body, {subtree:true, childList:true});
+  });
+})();
+</script>
 
 </head>
 <body>
@@ -584,16 +591,12 @@
         const docId = p._docId || String(p.id);
         return `
           <div class="edit-card" data-player-id="${p.id}">
-            <div class="edit-header"><input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)">
-  <input class="edit-name" type="text" value="${p.name}" oninput="updatePlayer(${p.id}, 'name', this.value)" placeholder="Nom">
-  <span class="badge">${p.hp}/${p.max}</span>
-  <div class="header-actions">
-    <button class="btn btn-danger btn-delete" type="button"
-            onclick="confirmAndRemove(${p.id}, ${JSON.stringify(p.name)})">
-      <span aria-hidden="true">🗑️</span><span class="sr-only">Supprimer</span>
-    </button>
-  </div></div>
-    </div>
+            <div class="edit-header">
+              <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)">
+              <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" /><div class="inline-field">
+                <label>Max</label>
+                <input type="number" value="${p.max}" min="1" onchange="updatePlayer(${p.id}, 'max', parseInt(this.value))">
+              </div>
               <span class="badge">${p.hp}/${p.max}</span>
             </div>
 
@@ -611,7 +614,8 @@
 </div>
 
               <div style="display:flex; justify-content:flex-end;">
-  </div>
+  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')">🗑️ Supprimer</button>
+</div>
             </div>
           </div>
         `;
@@ -672,19 +676,5 @@
       window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(console.error); });
     }
   </script>
-
-<script id="confirm-remove-helper">
-function confirmAndRemove(id, name){
-  try{
-    const msg = `Supprimer ${name} ?`;
-    if (window.confirm(msg)) {
-      removePlayer(id, msg);
-    }
-  }catch(e){
-    console.error('Confirm remove failed:', e);
-  }
-}
-</script>
-
 </body>
 </html>
