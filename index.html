@@ -274,6 +274,25 @@
   width: 100% !important;   /* so the capsule keeps same height/rounding */
 }
 
+
+/* UI 6.7b: lighten DEAD bar (more visible, not too vivid) */
+.hp-bar-container.dead{
+  background: repeating-linear-gradient(
+      -45deg,
+      rgba(170, 35, 35, 0.28) 0,
+      rgba(170, 35, 35, 0.28) 10px,
+      rgba(120, 20, 20, 0.20) 10px,
+      rgba(120, 20, 20, 0.20) 20px
+  ) !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(190, 90, 90, 0.40),
+    inset 0 3px 6px rgba(0,0,0,0.35);
+}
+.hp-bar-container.dead::after{
+  color: #ff8a8a; /* a touch brighter for readability */
+  text-shadow: 0 1px 0 rgba(0,0,0,0.55);
+}
+
 </style>
 
 <style id="ui-step4-compact-override">
