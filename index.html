@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Tableau des Points de Vie</title>
 
-  <!-- PWA meta (kept for installable app behavior) -->
+  <!-- PWA meta -->
   <meta name="theme-color" content="#0a0e1a">
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -21,8 +21,6 @@
       --muted: #a1a1aa;
       --border: rgba(71,85,105,0.6);
       --accent: #63ff8b;
-      --danger: #ef4444;
-      --ok: #22c55e;
     }
 
     * { box-sizing: border-box; }
@@ -33,233 +31,64 @@
       color: #f4f4f5;
     }
 
-    .app {
-      max-width: 860px;
-      margin: 0 auto;
-      padding-bottom: env(safe-area-inset-bottom);
-    }
+    .app { max-width: 860px; margin: 0 auto; padding-bottom: env(safe-area-inset-bottom); }
 
-    /* Sticky top bar with tabs */
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 30;
-      backdrop-filter: saturate(1.2) blur(8px);
-      background: linear-gradient(180deg, rgba(10,14,26,0.95), rgba(10,14,26,0.7));
-      border-bottom: 1px solid var(--border);
-    }
-    .topbar-inner {
-      max-width: 860px;
-      margin: 0 auto;
-      padding: .75rem .75rem .5rem;
-      display: flex;
-      gap: .5rem;
-      align-items: center;
-    }
-    h1.title {
-      font-size: 1.375rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin-right: auto;
-    }
-    .tabs {
-      background: var(--panel-plain);
-      border: 1px solid var(--border);
-      border-radius: 9999px;
-      display: inline-flex;
-      padding: .25rem;
-      gap: .25rem;
-    }
-    .tab-btn {
-      appearance: none;
-      border: 0;
-      border-radius: 9999px;
-      padding: .5rem .9rem;
-      font-weight: 700;
-      font-size: .95rem;
-      color: #e5e7eb;
-      background: transparent;
-    }
-    .tab-btn.active {
-      background: #2563eb;
-      color: white;
-      box-shadow: 0 0 18px rgba(37,99,235,.35);
-    }
-    .bar-btn {
-      margin-left: .5rem;
-      padding: .5rem .75rem;
-      border-radius: 14px;
-      background: var(--panel-plain);
-      border: 1px solid var(--border);
-      color: #f4f4f5;
-      font-weight: 600;
-    }
+    .topbar { position: sticky; top: 0; z-index: 30; backdrop-filter: saturate(1.2) blur(8px);
+      background: linear-gradient(180deg, rgba(10,14,26,0.95), rgba(10,14,26,0.7)); border-bottom: 1px solid var(--border); }
+    .topbar-inner { max-width: 860px; margin: 0 auto; padding: .75rem .75rem .5rem; display: flex; gap: .5rem; align-items: center; }
+    h1.title { font-size: 1.375rem; font-weight: 800; letter-spacing: -0.02em; margin-right: auto; }
+    .tabs { background: var(--panel-plain); border: 1px solid var(--border); border-radius: 9999px; display: inline-flex; padding: .25rem; gap: .25rem; }
+    .tab-btn { appearance: none; border: 0; border-radius: 9999px; padding: .5rem .9rem; font-weight: 700; font-size: .95rem; color: #e5e7eb; background: transparent; }
+    .tab-btn.active { background: #2563eb; color: white; box-shadow: 0 0 18px rgba(37,99,235,.35); }
+    .bar-btn { margin-left: .5rem; padding: .5rem .75rem; border-radius: 14px; background: var(--panel-plain); border: 1px solid var(--border); color: #f4f4f5; font-weight: 600; }
 
-    .section {
-      padding: .75rem;
-    }
+    .section { padding: .75rem; }
 
-    /* Display card */
-    .display-card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: .75rem;
-      box-shadow: 0 10px 20px rgba(0,0,0,.25);
-    }
-    .display-header {
-      display: flex;
-      justify-content: flex-end;
-      gap: .5rem;
-      margin-bottom: .5rem;
-    }
-    .btn {
-      padding: .5rem .75rem;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: #121828;
-      color: #f4f4f5;
-    }
+    .display-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: .75rem; box-shadow: 0 10px 20px rgba(0,0,0,.25); }
+    .display-header { display: flex; justify-content: flex-end; gap: .5rem; margin-bottom: .5rem; }
+    .btn { padding: .5rem .75rem; border-radius: 12px; border: 1px solid var(--border); background: #121828; color: #f4f4f5; }
 
     .player-display { margin-bottom: .75rem; }
-    .player-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: .25rem;
-    }
-    .player-name-display {
-      font-size: 1.35rem; font-weight: 800; letter-spacing: .02em;
-      text-shadow: 0 1px 2px rgba(0,0,0,.3);
-    }
+    .player-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:.25rem;}
+    .player-name-display { font-size: 1.35rem; font-weight: 800; letter-spacing: .02em; text-shadow: 0 1px 2px rgba(0,0,0,.3); }
     .player-percent { color: var(--muted); font-size: .95rem; }
 
-    .hp-bar-container {
-      position: relative; width: 100%; height: 2.9rem;
-      border-radius: .85rem; overflow: hidden;
-      border: 1px solid rgba(16, 185, 129, 0.25);
-      box-shadow: inset 0 2px 4px rgba(0,0,0,.35);
-      background: #0f1419;
-    }
-    .hp-bar {
-      height: 100%; display: flex; align-items: center; justify-content: center;
-      font-weight: 900; font-size: 1.05rem;
-      color: #004d26;
-      transition: width .4s cubic-bezier(.4,0,.2,1);
-      position: relative;
-    }
-    .hp-bar::after {
-      content: ""; position:absolute; inset:0;
-      background-image: linear-gradient(45deg, transparent 25%, rgba(255,255,255,.12) 25%, rgba(255,255,255,.12) 50%, transparent 50%, transparent 75%, rgba(255,255,255,.12) 75%, rgba(255,255,255,.12));
-      background-size: 18px 18px; opacity: .25;
-      pointer-events: none;
-    }
+    .hp-bar-container { position:relative; width:100%; height:2.9rem; border-radius:.85rem; overflow:hidden; border:1px solid rgba(16,185,129,.25); box-shadow: inset 0 2px 4px rgba(0,0,0,.35); background:#0f1419; }
+    .hp-bar { height:100%; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:1.05rem; color:#004d26; transition:width .4s cubic-bezier(.4,0,.2,1); position:relative; }
+    .hp-bar::after { content:""; position:absolute; inset:0; background-image: linear-gradient(45deg, transparent 25%, rgba(255,255,255,.12) 25%, rgba(255,255,255,.12) 50%, transparent 50%, transparent 75%, rgba(255,255,255,.12) 75%, rgba(255,255,255,.12)); background-size: 18px 18px; opacity:.25; pointer-events:none; }
 
-    .sort-buttons {
-      display:flex; justify-content:flex-end; gap:.5rem; padding-top:.5rem;
-    }
-    .btn-sort { padding: .4rem .7rem; border-radius: 10px; border: 1px solid var(--border); }
+    .sort-buttons { display:flex; justify-content:flex-end; gap:.5rem; padding-top:.5rem; }
+    .btn-sort { padding:.4rem .7rem; border-radius:10px; border:1px solid var(--border); }
     .btn-sort.active { background:#2563eb; color:#fff; border-color:#3b82f6; }
 
-    /* ==== New EDIT UI (portrait-optimized) ==== */
-    .edit-stack {
-      display: flex; flex-direction: column;
-      gap: .6rem;
-    }
-    details.player-edit {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      overflow: hidden;
-    }
-    .edit-summary {
-      list-style: none; display: flex; align-items: center;
-      gap: .6rem; padding: .8rem .8rem;
-    }
-    .edit-summary::-webkit-details-marker { display: none; }
-    .pill {
-      font-size: .85rem; font-weight: 800; letter-spacing:.02em;
-      padding: .35rem .6rem; border-radius: 9999px;
-      background: #0f1419; border:1px solid var(--border);
-      min-width: 44px; text-align:center;
-    }
-    .edit-name {
-      flex:1;
-      font-size: 1.05rem; font-weight: 800;
-      border: 0; background: transparent; color: #f4f4f5;
-      outline: none;
-    }
-    .badge {
-      font-size: .8rem; padding: .25rem .5rem;
-      border-radius: 9999px; border: 1px solid var(--border);
-      color: #e5e7eb; background: #0f1419;
-    }
-    .edit-body {
-      padding: .8rem;
-      border-top: 1px dashed var(--border);
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: .75rem;
-    }
-    .row {
-      display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; align-items: center;
-    }
-    .field {
-      display: flex; align-items: center; gap: .5rem;
-      background: #0f1419; border:1px solid var(--border); border-radius: 12px;
-      padding: .5rem .6rem; min-height: 44px;
-    }
-    .field label {
-      font-size: .85rem; color: var(--muted); min-width: 3.2rem;
-    }
-    .field input[type="number"],
-    .field input[type="text"] {
-      background: transparent; border: 0; color: #fff; font-size: 1rem; width: 100%;
-      outline: none; text-align: center;
-    }
-    .color-pick {
-      width: 44px; height: 44px; border-radius: 10px;
-      border: 1px solid var(--border); background: #0f1419;
-    }
+    /* EDIT UI */
+    .edit-stack { display: flex; flex-direction: column; gap: .6rem; }
+    details.player-edit { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+    .edit-summary { list-style:none; display:flex; align-items:center; gap:.6rem; padding:.8rem .8rem; }
+    .edit-summary::-webkit-details-marker { display:none; }
+    .pill { font-size:.85rem; font-weight:800; letter-spacing:.02em; padding:.35rem .6rem; border-radius:9999px; background:#0f1419; border:1px solid var(--border); min-width:44px; text-align:center; }
+    .edit-name { flex:1; font-size:1.05rem; font-weight:800; border:0; background:transparent; color:#f4f4f5; outline:none; }
+    .badge { font-size:.8rem; padding:.25rem .5rem; border-radius:9999px; border:1px solid var(--border); color:#e5e7eb; background:#0f1419; }
 
-    .big-keys {
-      display:grid; grid-template-columns: repeat(6, 1fr); gap: .4rem;
-    }
-    .key {
-      min-height: 44px; border-radius: 12px;
-      font-weight: 800; border: 1px solid var(--border);
-      background: #121828; color: #e5e7eb;
-    }
-    .key.neg { background: rgba(127,29,29,.5); color: #fecaca; }
-    .key.pos { background: rgba(20,83,45,.5); color: #bbf7d0; }
+    .edit-body { padding:.8rem; border-top:1px dashed var(--border); display:grid; grid-template-columns:1fr; gap:.75rem; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap:.5rem; align-items:center; }
+    .field { display:flex; align-items:center; gap:.5rem; background:#0f1419; border:1px solid var(--border); border-radius:12px; padding:.5rem .6rem; min-height:44px; }
+    .field label { font-size:.85rem; color:var(--muted); min-width:3.2rem; }
+    .field input[type="number"], .field input[type="text"] { background:transparent; border:0; color:#fff; font-size:1rem; width:100%; outline:none; text-align:center; }
+    .color-pick { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border); background: #0f1419; }
 
-    .status-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: .4rem;
-    }
-    .status {
-      min-height: 40px; border-radius: 10px; border:1px solid var(--border);
-      background:#0f1419; color:#e5e7eb; font-weight:700;
-    }
-    .status.active.affaibli { background:#64748b; color:#fff; border-color:#64748b; }
-    .status.active.ausol { background:#8b5e3c; color:#fff; border-color:#8b5e3c; }
-    .status.active.feu { background:#ef4444; color:#fff; border-color:#ef4444; }
+    /* 2 lines of keys: 3 columns x 2 rows */
+    .big-keys { display:grid; grid-template-columns: repeat(3, 1fr); gap:.5rem; }
+    .key { min-height: 52px; border-radius: 12px; font-weight: 900; font-size: 1.05rem; border: 1px solid var(--border); background: #121828; color: #e5e7eb; }
+    .key.neg { background: rgba(127,29,29,.55); color: #fecaca; }
+    .key.pos { background: rgba(20,83,45,.55); color: #bbf7d0; }
 
-    .danger-btn {
-      background: rgba(127,29,29,.45); color:#fecaca; border:1px solid #991b1b;
-      padding:.5rem .75rem; border-radius: 12px; font-weight:700;
-    }
+    .danger-btn { background: rgba(127,29,29,.45); color:#fecaca; border:1px solid #991b1b; padding:.6rem .8rem; border-radius: 12px; font-weight:700; }
+    .btn { cursor:pointer; }
 
-    /* Fullscreen overlay unchanged but with bigger sizes on portrait */
-    .fullscreen { position: fixed; inset:0; z-index: 50; background: rgba(0,0,0,.95); padding: 4rem .75rem; display:none; }
+    .fullscreen { position:fixed; inset:0; z-index:50; background: rgba(0,0,0,.95); padding: 4rem .75rem; display:none; }
     .fullscreen.active { display:block; }
-    .fullscreen-close { position:absolute; top: .75rem; right:.75rem; }
-
-    /* Touch targets and portrait scaling */
-    @media (orientation: portrait) {
-      .player-name-display { font-size: 1.5rem; }
-      .hp-bar-container { height: 3.2rem; }
-      .hp-bar { font-size: 1.15rem; }
-      .row { grid-template-columns: 1fr 1fr; }
-      .big-keys { grid-template-columns: repeat(6, 1fr); }
-    }
+    .fullscreen-close { position:absolute; top:.75rem; right:.75rem; }
 
     @keyframes flash-up { from { box-shadow: inset 0 0 30px rgba(34,197,94,.5);} to { box-shadow:none;} }
     @keyframes flash-down { from { box-shadow: inset 0 0 30px rgba(239,68,68,.5);} to { box-shadow:none;} }
@@ -271,18 +100,15 @@
   <div class="topbar">
     <div class="topbar-inner">
       <h1 class="title">Tableau des Points de Vie</h1>
-
       <div class="tabs">
         <button class="tab-btn active" id="tab-display" onclick="setTab('display')">Affichage</button>
         <button class="tab-btn" id="tab-edit" onclick="setTab('edit')">Édition</button>
       </div>
-
       <button class="bar-btn" onclick="toggleFullscreen()">Plein écran</button>
     </div>
   </div>
 
   <div class="app">
-    <!-- DISPLAY SECTION -->
     <section id="section-display" class="section">
       <div class="display-card">
         <div id="display-area"></div>
@@ -294,10 +120,9 @@
       </div>
     </section>
 
-    <!-- EDIT SECTION (portrait-optimized) -->
     <section id="section-edit" class="section" style="display:none;">
       <div class="edit-stack" id="edit-stack"></div>
-      <div style="height: .5rem;"></div>
+      <div style="height:.5rem;"></div>
       <div class="display-card" style="margin-top:.25rem;">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:.5rem;">
           <button class="btn" onclick="addPlayer()">+ Ajouter</button>
@@ -321,14 +146,12 @@
     </section>
   </div>
 
-  <!-- Fullscreen -->
   <div id="fullscreen" class="fullscreen">
     <button onclick="toggleFullscreen()" class="btn fullscreen-close">Quitter le plein écran</button>
     <div id="fullscreen-content" class="fullscreen-content"></div>
   </div>
 
   <script>
-    // Tabs
     function setTab(which) {
       const isDisplay = which === 'display';
       document.getElementById('section-display').style.display = isDisplay ? '' : 'none';
@@ -351,42 +174,23 @@
     let nextId = 6;
     const USE_FIREBASE = true;
 
-    function saveData() {
-      if (!USE_FIREBASE) localStorage.setItem('pv-tracker-v1', JSON.stringify(players));
-    }
-
+    function saveData() { if (!USE_FIREBASE) localStorage.setItem('pv-tracker-v1', JSON.stringify(players)); }
     function loadData() {
       if (!USE_FIREBASE) {
         const saved = localStorage.getItem('pv-tracker-v1');
         if (saved) {
-          try {
-            players = JSON.parse(saved);
-            nextId = players.length ? Math.max(...players.map(p => p.id)) + 1 : 1;
-          } catch {
-            players = JSON.parse(JSON.stringify(defaultPlayers));
-            nextId = 6;
-          }
-        } else {
-          players = JSON.parse(JSON.stringify(defaultPlayers));
-          nextId = 6;
-        }
+          try { players = JSON.parse(saved); nextId = players.length ? Math.max(...players.map(p => p.id)) + 1 : 1; }
+          catch { players = JSON.parse(JSON.stringify(defaultPlayers)); nextId = 6; }
+        } else { players = JSON.parse(JSON.stringify(defaultPlayers)); nextId = 6; }
       }
     }
 
     function addPlayer() {
-      if (!USE_FIREBASE) {
-        players.push({ id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", statuses: [] });
-        return render();
-      }
+      if (!USE_FIREBASE) { players.push({ id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", statuses: [] }); return render(); }
       const p = { id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", statuses: [], updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
       playersCol.doc(String(p.id)).set(p, { merge: true });
     }
-
-    function removePlayer(id) {
-      if (!USE_FIREBASE) { players = players.filter(p => p.id !== id); return render(); }
-      playersCol.doc(String(id)).delete();
-    }
-
+    function removePlayer(id) { if (!USE_FIREBASE) { players = players.filter(p => p.id !== id); return render(); } playersCol.doc(String(id)).delete(); }
     function updatePlayer(id, field, value) {
       if (!USE_FIREBASE) {
         const player = players.find(p => p.id === id);
@@ -402,38 +206,26 @@
       else if (field === 'name' || field === 'color') patch[field] = value;
       playersCol.doc(String(id)).set(patch, { merge: true });
     }
-
     const debounceMap = new Map();
     function changeHP(id, delta) {
       if (!USE_FIREBASE) {
         const player = players.find(p => p.id === id);
-        if (player) {
-          player.hp = Math.max(0, Math.min(player.max, player.hp + delta));
-          render();
-          flashPlayer(id, delta > 0 ? 'up' : 'down');
-        }
+        if (player) { player.hp = Math.max(0, Math.min(player.max, player.hp + delta)); render(); flashPlayer(id, delta > 0 ? 'up' : 'down'); }
         return;
       }
       clearTimeout(debounceMap.get(id));
       const t = setTimeout(async () => {
         const snap = await playersCol.doc(String(id)).get();
-        const p = snap.data();
-        if (!p) return;
+        const p = snap.data(); if (!p) return;
         const next = Math.max(0, Math.min(p.max, (p.hp || 0) + delta));
         playersCol.doc(String(id)).set({ hp: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       }, 120);
       debounceMap.set(id, t);
     }
-
     function setHP(id, value) {
       if (!USE_FIREBASE) {
         const player = players.find(p => p.id === id);
-        if (player) {
-          const oldHP = player.hp;
-          player.hp = Math.max(0, Math.min(player.max, Number(value)||0));
-          render();
-          if (player.hp !== oldHP) flashPlayer(id, player.hp > oldHP ? 'up' : 'down');
-        }
+        if (player) { const oldHP = player.hp; player.hp = Math.max(0, Math.min(player.max, Number(value)||0)); render(); if (player.hp !== oldHP) flashPlayer(id, player.hp > oldHP ? 'up' : 'down'); }
         return;
       }
       playersCol.doc(String(id)).get().then(s => {
@@ -442,34 +234,7 @@
         return playersCol.doc(String(id)).set({ hp: clamped, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       });
     }
-
-    function toggleStatus(id, status) {
-      if (!USE_FIREBASE) {
-        const player = players.find(p => p.id === id);
-        if (player) {
-          if (!Array.isArray(player.statuses)) player.statuses = [];
-          const idx = player.statuses.indexOf(status);
-          if (idx >= 0) player.statuses.splice(idx, 1); else player.statuses.push(status);
-          render();
-        }
-        return;
-      }
-      db.runTransaction(async (tx) => {
-        const ref = playersCol.doc(String(id));
-        const snap = await tx.get(ref);
-        const p = snap.data() || {};
-        const s = new Set(Array.isArray(p.statuses) ? p.statuses : []);
-        s.has(status) ? s.delete(status) : s.add(status);
-        tx.set(ref, { statuses: Array.from(s), updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-      });
-    }
-
-    function sortPlayers(mode) {
-      sortMode = mode;
-      document.querySelectorAll('.btn-sort').forEach(btn => btn.classList.remove('active'));
-      if (mode !== 'none') document.getElementById(`sort-${mode}`).classList.add('active');
-      render();
-    }
+    function sortPlayers(mode) { sortMode = mode; document.querySelectorAll('.btn-sort').forEach(b=>b.classList.remove('active')); if (mode!=='none') document.getElementById(`sort-${mode}`).classList.add('active'); render(); }
 
     function getHealthColor(percent) {
       if (percent > 50) return 'linear-gradient(90deg, #10b981, #22c55e)';
@@ -477,14 +242,12 @@
       else if (percent > 10) return 'linear-gradient(90deg, #f97316, #fb923c)';
       else return 'linear-gradient(90deg, #dc2626, #ef4444)';
     }
-
     function getTextColor(percent) {
       if (percent > 50) return '#004d26';
       else if (percent > 25) return '#713f12';
       else if (percent > 10) return '#7c2d12';
       else return '#450a0a';
     }
-
     function getSortedPlayers() {
       const sorted = [...players];
       if (sortMode === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name));
@@ -492,31 +255,9 @@
       else if (sortMode === 'hpasc') sorted.sort((a, b) => a.hp - b.hp);
       return sorted;
     }
-
-    function updateTheme() {
-      themeColor = document.getElementById('theme-color').value;
-      render();
-    }
-
-    function toggleFullscreen() {
-      const fs = document.getElementById('fullscreen');
-      if (fs.classList.contains('active')) {
-        fs.classList.remove('active');
-        document.exitFullscreen?.();
-      } else {
-        fs.classList.add('active');
-        renderFullscreen();
-        document.documentElement.requestFullscreen?.();
-      }
-    }
-
-    function flashPlayer(id, direction) {
-      const containers = document.querySelectorAll(`[data-player-id="${id}"]`);
-      containers.forEach(container => {
-        container.classList.add(direction === 'up' ? 'flash-up' : 'flash-down');
-        setTimeout(() => { container.classList.remove('flash-up', 'flash-down'); }, 250);
-      });
-    }
+    function updateTheme() { themeColor = document.getElementById('theme-color').value; render(); }
+    function toggleFullscreen() { const fs = document.getElementById('fullscreen'); if (fs.classList.contains('active')) { fs.classList.remove('active'); document.exitFullscreen?.(); } else { fs.classList.add('active'); renderFullscreen(); document.documentElement.requestFullscreen?.(); } }
+    function flashPlayer(id, direction) { document.querySelectorAll(`[data-player-id="${id}"]`).forEach(c => { c.classList.add(direction==='up'?'flash-up':'flash-down'); setTimeout(()=>c.classList.remove('flash-up','flash-down'), 250); }); }
 
     function renderFullscreen() {
       const content = document.getElementById('fullscreen-content');
@@ -545,8 +286,6 @@
 
     function render() {
       const sorted = getSortedPlayers();
-
-      // DISPLAY
       const displayArea = document.getElementById('display-area');
       displayArea.innerHTML = sorted.map(p => {
         const percent = Math.round((p.hp / p.max) * 100);
@@ -569,13 +308,9 @@
         `;
       }).join('');
 
-      // EDIT (accordion, touch-friendly)
       const edit = document.getElementById('edit-stack');
       edit.innerHTML = players.map(p => {
         const percent = Math.round((p.hp / p.max) * 100);
-        const aff = Array.isArray(p.statuses) && p.statuses.includes('affaibli');
-        const sol = Array.isArray(p.statuses) && p.statuses.includes('ausol');
-        const feu = Array.isArray(p.statuses) && p.statuses.includes('feu');
         return `
           <details class="player-edit" data-player-id="${p.id}">
             <summary class="edit-summary">
@@ -596,6 +331,7 @@
                 </div>
               </div>
 
+              <!-- Two-line keys: 3 columns x 2 rows -->
               <div class="big-keys">
                 <button class="key neg" onclick="changeHP(${p.id}, -10)" type="button">-10</button>
                 <button class="key neg" onclick="changeHP(${p.id}, -5)" type="button">-5</button>
@@ -607,24 +343,17 @@
 
               <div class="row">
                 <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)">
-                <div class="status-grid">
-                  <button type="button" class="status ${aff ? 'active affaibli' : ''}" onclick="toggleStatus(${p.id}, 'affaibli')">Affaibli</button>
-                  <button type="button" class="status ${sol ? 'active ausol' : ''}" onclick="toggleStatus(${p.id}, 'ausol')">Au sol</button>
-                  <button type="button" class="status ${feu ? 'active feu' : ''}" onclick="toggleStatus(${p.id}, 'feu')">Feu</button>
+                <div style="display:flex; gap:.5rem; justify-content: flex-end;">
+                  <button class="danger-btn" type="button" onclick="setHP(${p.id}, 0)">Dead</button>
+                  <button class="btn" type="button" onclick="setHP(${p.id}, ${p.max})">Full</button>
+                  <button class="danger-btn" type="button" onclick="removePlayer(${p.id})">🗑️ Supprimer</button>
                 </div>
-              </div>
-
-              <div style="display:flex; gap:.5rem; justify-content: space-between;">
-                <button class="danger-btn" type="button" onclick="setHP(${p.id}, 0)">Dead</button>
-                <button class="btn" type="button" onclick="setHP(${p.id}, ${p.max})">Full</button>
-                <button class="danger-btn" type="button" onclick="removePlayer(${p.id})">🗑️ Supprimer</button>
               </div>
             </div>
           </details>
         `;
       }).join('');
 
-      // Stats (bottom panel)
       const totalHP = players.reduce((sum, p) => sum + Math.min(p.hp, p.max), 0);
       const totalMax = players.reduce((sum, p) => sum + p.max, 0);
       document.getElementById('total-hp').textContent = totalHP;
@@ -632,22 +361,15 @@
 
       saveData();
 
-      // Keep fullscreen view synced live
       const fs = document.getElementById('fullscreen');
-      if (fs && fs.classList.contains('active')) {
-        renderFullscreen();
-      }
+      if (fs && fs.classList.contains('active')) renderFullscreen();
     }
 
     document.addEventListener('keydown', (e) => {
       if ((e.key || '').toLowerCase() === 'f') toggleFullscreen();
-      if (e.key === 'Escape') {
-        const fs = document.getElementById('fullscreen');
-        if (fs.classList.contains('active')) toggleFullscreen();
-      }
+      if (e.key === 'Escape') { const fs = document.getElementById('fullscreen'); if (fs.classList.contains('active')) toggleFullscreen(); }
     });
 
-    // Init local (if not Firebase)
     loadData();
     render();
   </script>
@@ -658,18 +380,17 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
   <script>
     if (window.firebase && true) {
+      // Use the original, correct Firebase config as provided earlier
       const firebaseConfig = {
         apiKey: "AIzaSyBRdDQ6SfPrwU1pT-m2DEdL1RuSIRd3uZ8",
         authDomain: "hpbars-4bd0e.firebaseapp.com",
         projectId: "hpbars-4bd0e",
         storageBucket: "hpbars-4bd0e.firebasestorage.app",
         messagingSenderId: "587307780453",
-        appId: "1:58730794cb59c82fe5b98c",
+        appId: "1:587307780453:web:49520794cb59c82fe5b98c",
         measurementId: "G-LKE20WLCSZ"
       };
-      try {
-        firebase.initializeApp(firebaseConfig);
-      } catch (e) {}
+      try { firebase.initializeApp(firebaseConfig); } catch (e) {}
       const auth = firebase.auth();
       const db = firebase.firestore();
       auth.signInAnonymously().catch(console.error);
@@ -688,11 +409,8 @@
   </script>
 
   <script>
-    // Register SW if present
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(console.error);
-      });
+      window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(console.error); });
     }
   </script>
 </body>
