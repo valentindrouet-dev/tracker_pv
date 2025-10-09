@@ -164,6 +164,47 @@
     .flash-up { animation: flash-up .22s ease-out; }
     .flash-down { animation: flash-down .22s ease-out; }
   </style>
+
+<style id="ui-step4-compact-override">
+/* --- STEP4 OVERRIDE: force ultra-compact single-line controls (wins via !important & specificity) --- */
+.edit-card .big-keys{
+  display:flex !important;
+  flex-wrap:nowrap !important;
+  gap:.12rem !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+.edit-card .big-keys .key{
+  flex:0 0 auto !important;
+  min-width:0 !important;
+  padding:.2rem .3rem !important;
+  font-size:.78rem !important;
+  line-height:1 !important;
+  border-radius:.45rem !important;
+  white-space:nowrap !important;
+}
+.edit-card .big-keys .key:has(> svg){ /* in case icons exist later */
+  padding:.15rem .26rem !important;
+}
+.edit-card .pv-center{
+  width:3.1rem !important;
+  padding:.25rem .35rem !important;
+  font-size:.9rem !important;
+}
+/* Optional: tighten the skull/heart emoji button min-width */
+.edit-card .big-keys .key:first-child,
+.edit-card .big-keys .key:last-child{
+  min-width:1.8rem !important;
+  padding:.18rem .26rem !important;
+  font-size:.9rem !important; /* keep emoji readable */
+}
+@media (max-width: 420px){
+  .edit-card .big-keys{ gap:.1rem !important; }
+  .edit-card .big-keys .key{ font-size:.72rem !important; padding:.18rem .26rem !important; }
+  .edit-card .pv-center{ width:2.9rem !important; font-size:.85rem !important; }
+}
+</style>
+
 </head>
 <body>
   <div class="topbar">
