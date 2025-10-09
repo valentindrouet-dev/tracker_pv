@@ -179,135 +179,9 @@
 }
 
 
-/* UI Reset: remove any accidental extra top padding on edit cards */
-.edit-card { padding-top: 0 !important; }
-
-
-/* UI Fix 6.4: hide PV/PV Max badge in edit mode */
-.edit-card .badge { display: none !important; }
-
-
-20%  { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-
-18%  { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-
-/* UI 6.6: flash feedback on the button itself */
-.edit-card .big-keys .key,
-.card .big-keys .key { position: relative; overflow: visible; }
-
-.key.btn-flash-pos::after,
-.key.btn-flash-neg::after{
-  content:"";
-  position:absolute;
-  inset:-2px;
-  border-radius: inherit;
-  pointer-events:none;
-  animation: btnFlash 300ms ease-out;
-}
-
-.key.btn-flash-pos::after{ box-shadow: 0 0 0 3px rgba(40, 200, 120, 0.55); }
-.key.btn-flash-neg::after{ box-shadow: 0 0 0 3px rgba(220, 60, 60, 0.6); }
-
-@keyframes btnFlash {
-  0%   { opacity: 0; }
-  20%  { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-
-/* UI 6.6b: ensure flash applies to ANY .key button, not only inside .big-keys */
-.key { position: relative; overflow: visible; }
-
-.key.btn-flash-pos::after,
-.key.btn-flash-neg::after{
-  content:"";
-  position:absolute;
-  inset:-3px;
-  border-radius: inherit;
-  pointer-events:none;
-  animation: btnFlash 340ms ease-out;
-}
-.key.btn-flash-pos::after{ box-shadow: 0 0 0 3px rgba(40, 200, 120, 0.65); }
-.key.btn-flash-neg::after{ box-shadow: 0 0 0 3px rgba(220, 60, 60, 0.7); }
-
-@keyframes btnFlash {
-  0%   { opacity: 0; transform: scale(1); }
-  20%  { opacity: 1; transform: scale(0.98); }
-  100% { opacity: 0; transform: scale(1); }
-}
-
-
-/* UI 6.7: DEAD style when HP == 0 */
-.hp-bar-container.dead{
-  position: relative;
-  background: repeating-linear-gradient(
-      -45deg,
-      rgba(120,0,0,0.35) 0,
-      rgba(120,0,0,0.35) 12px,
-      rgba(80,0,0,0.35) 12px,
-      rgba(80,0,0,0.35) 24px
-  ) !important;
-  box-shadow: inset 0 0 0 2px rgba(120,0,0,0.35), inset 0 4px 6px rgba(0,0,0,0.45);
-}
-.hp-bar-container.dead::after{
-  content: "☠️";
-  position:absolute;
-  inset: 0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight: 800;
-  font-size: 1.2rem;
-  color: #ff6b6b;
-  text-shadow: 0 1px 0 rgba(0,0,0,0.6);
-  pointer-events:none;
-}
-.hp-bar-container.dead .hp-bar{
-  background: transparent !important;
-  color: transparent !important;
-  width: 100% !important;   /* so the capsule keeps same height/rounding */
-}
-
-
-/* UI 6.7b: lighten DEAD bar (more visible, not too vivid) */
-.hp-bar-container.dead{
-  background: repeating-linear-gradient(
-      -45deg,
-      rgba(170, 35, 35, 0.28) 0,
-      rgba(170, 35, 35, 0.28) 10px,
-      rgba(120, 20, 20, 0.20) 10px,
-      rgba(120, 20, 20, 0.20) 20px
-  ) !important;
-  box-shadow:
-    inset 0 0 0 2px rgba(190, 90, 90, 0.40),
-    inset 0 3px 6px rgba(0,0,0,0.35);
-}
-.hp-bar-container.dead::after{
-  color: #ff8a8a; /* a touch brighter for readability */
-  text-shadow: 0 1px 0 rgba(0,0,0,0.55);
-}
-
-
-/* UI 6.7c: dead bar = empty capsule + skull (no red background) */
-.hp-bar-container.dead{
-  background: #0f1419 !important;            /* back to neutral capsule */
-  box-shadow: inset 0 2px 4px rgba(0,0,0,.35) !important;
-}
-.hp-bar-container.dead::after{
-  content: "☠️";
-  color: #e6e6e6;
-  text-shadow: 0 1px 0 rgba(0,0,0,0.55);
-}
-.hp-bar-container.dead .hp-bar{
-  background: transparent !important;
-  color: transparent !important;
-  width: 0 !important;                        /* truly empty bar */
+/* UI 6.8: dynamic theming for HP bar container (outline + empty background) */
+.hp-bar-container{
+  transition: background-color 120ms ease, box-shadow 120ms ease;
 }
 
 </style>
@@ -787,159 +661,70 @@
   </script>
 
 <script>
+// UI 6.8: Sync the HP container outline + empty-bg with the current bar color
 (function(){
-  // Debounce helper
-  let rafId = null;
-  const schedule = (fn) => {
-    if (rafId) cancelAnimationFrame(rafId);
-    rafId = requestAnimationFrame(fn);
-  };
+  const phases = [
+    {min: 67, name:'green',  bg:'rgba(20,60,40,0.28)', edge:'rgba(40,120,80,0.40)'},
+    {min: 41, name:'yellow', bg:'rgba(90,80,20,0.22)', edge:'rgba(200,170,40,0.38)'},
+    {min: 16, name:'orange', bg:'rgba(110,60,15,0.24)', edge:'rgba(220,120,40,0.40)'},
+    {min: 1,  name:'red',    bg:'rgba(80,20,20,0.26)', edge:'rgba(200,60,60,0.45)'},
+    {min: 0,  name:'black',  bg:'#0b0f14',             edge:'rgba(0,0,0,0.65)'},
+  ];
 
-  function findMaxInput(card){
-    const inputs = Array.from(card.querySelectorAll('input[type="number"]'));
-    for (const inp of inputs){
-      const name = ((inp.name||'') + ' ' + (inp.id||'') + ' ' + (inp.getAttribute('aria-label')||'')).toLowerCase();
-      const prev = ((inp.previousElementSibling && inp.previousElementSibling.textContent) || '');
-      const label = ((inp.closest('label') && inp.closest('label').textContent) || '');
-      if (/\bmax\b/.test(name) || /\bmax\b/i.test(prev) || /\bmax\b/i.test(label)) return inp;
+  function phaseFor(percent){
+    for (const ph of phases){
+      if (percent >= ph.min) return ph;
     }
-    return null;
+    return phases[phases.length-1];
   }
 
-  function placeButton(card){
-    const btn = card.querySelector('.danger-btn');
-    if(!btn) return false;
+  function parsePercent(el){
+    // try inline style width:%
+    const m = (el.getAttribute('style')||'').match(/width:\s*([0-9.]+)%/);
+    if (m) return parseFloat(m[1]);
+    // fallback to computed ratio
+    const w = el.getBoundingClientRect().width;
+    const cont = el.closest('.hp-bar-container');
+    if (!cont) return 0;
+    const cw = cont.getBoundingClientRect().width;
+    return cw ? Math.max(0, Math.min(100, (w/cw)*100)) : 0;
+  }
 
-    // Emoji-only + a11y
-    btn.textContent = '🗑️';
-    btn.setAttribute('aria-label','Supprimer');
-    btn.title = 'Supprimer';
-    btn.style.position = 'static';
+  function themeOne(el){
+    const cont = el.closest('.hp-bar-container');
+    if (!cont) return;
 
-    const maxInput = findMaxInput(card);
-    if(!maxInput) return false;
-
-    // find the "capsule" around max input
-    let capsule = maxInput.closest('label') || maxInput.parentElement;
-    if (!capsule || capsule.classList.contains('inline-max-with-delete')) return false;
-
-    // Ensure we don't duplicate wrappers. Remove old inline wrapper if it exists and is empty.
-    const existingWrapper = capsule.parentElement && capsule.parentElement.classList && capsule.parentElement.classList.contains('inline-max-with-delete') ? capsule.parentElement : null;
-    if (existingWrapper && existingWrapper.querySelector('.danger-btn')) {
-      // already good
-      return true;
+    const pct = parsePercent(el);
+    // dead overlay logic still applies
+    if (pct <= 0.01){
+      cont.classList.add('dead');
+      // black-ish container for the empty capsule
+      cont.style.background = '#0b0f14';
+      cont.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,.35)';
+      return;
+    } else {
+      cont.classList.remove('dead');
     }
 
-    const wrapper = existingWrapper || document.createElement('span');
-    if (!existingWrapper) {
-      wrapper.className = 'inline-max-with-delete';
-      wrapper.style.display = 'inline-flex';
-      wrapper.style.alignItems = 'center';
-      wrapper.style.gap = '8px';
-      capsule.parentElement.insertBefore(wrapper, capsule);
-      wrapper.appendChild(capsule);
-    }
-    wrapper.appendChild(btn);
-    return true;
+    const ph = phaseFor(pct);
+    // Empty area color + outline
+    cont.style.background = ph.bg;
+    cont.style.boxShadow = `inset 0 0 0 2px ${ph.edge}, inset 0 3px 6px rgba(0,0,0,0.35)`;
   }
 
   function applyAll(){
-    document.querySelectorAll('.edit-card').forEach(placeButton);
+    document.querySelectorAll('.hp-bar').forEach(themeOne);
   }
 
-  const boot = () => schedule(applyAll);
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', boot);
-  } else {
-    boot();
-  }
-
-  // Observe mutations on the root container to re-apply when cards update
-  const root = document.body;
-  const mo = new MutationObserver(() => schedule(applyAll));
-  mo.observe(root, { childList: true, subtree: true });
-
-  // Also hook common render triggers
-  document.addEventListener('click', (e)=>{
-    const t = e.target;
-    if (!t) return;
-    if (t.matches('[data-tab], [data-view], .btn, button')) schedule(applyAll);
-  });
-
-  // Expose a global re-align if the app calls render functions we can patch
-  window.__alignDeleteNextToMax = applyAll;
-})();
-</script>
-
-
-<!-- removed old flash-on-card script -->
-
-
-<script>
-// UI 6.6: flash feedback on +/- buttons (button only)
-(function(){
-  const flashBtn = (btn, cls, dur=300) => {
-    if(!btn) return;
-    btn.classList.remove(cls);
-    void btn.offsetWidth; // reflow to replay animation
-    btn.classList.add(cls);
-    setTimeout(()=> btn.classList.remove(cls), dur);
-  };
-
-  document.addEventListener('click', function(e){
-    const btn = e.target.closest('button.key, .key button, .key'); // try to catch the visual key
-    // If not a key, bail early.
-    if (!btn || !(btn.classList && btn.classList.contains('key'))) return;
-
-    const txt = (btn.textContent || "").trim();
-    const isNeg = btn.classList.contains('neg') || /^-\d+/.test(txt) || txt.includes('☠');
-    const isPos = btn.classList.contains('pos') || /^\+\d+/.test(txt) || txt.includes('💚');
-
-    if (isNeg) return flashBtn(btn, 'btn-flash-neg');
-    if (isPos) return flashBtn(btn, 'btn-flash-pos');
-  }, true);
-})();
-</script>
-
-
-<script>
-// UI 6.7: Toggle 'dead' style on hp bars when width is 0%
-(function(){
-  function updateDeadStates(root=document){
-    document.querySelectorAll('.hp-bar').forEach(el=>{
-      const cont = el.closest('.hp-bar-container');
-      if(!cont) return;
-
-      // read inline width percentage if present
-      let w = 0;
-      const styleWidth = (el.getAttribute('style')||'').match(/width:\s*([0-9.]+)%/);
-      if (styleWidth) w = parseFloat(styleWidth[1]);
-
-      // Fallback: computed width
-      if (!styleWidth){
-        const cw = el.getBoundingClientRect().width;
-        w = cw < 2 ? 0 : 1; // treat ultra thin as zero
-      }
-
-      if (w <= 0) cont.classList.add('dead');
-      else cont.classList.remove('dead');
-    });
-  }
-
-  // Run at load and on DOM changes
-  const boot = () => requestAnimationFrame(updateDeadStates);
+  // Initial + reactive updates
+  const boot = () => requestAnimationFrame(applyAll);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  const mo = new MutationObserver(()=> requestAnimationFrame(updateDeadStates));
+  const mo = new MutationObserver(()=> requestAnimationFrame(applyAll));
   mo.observe(document.body, {childList:true, subtree:true, attributes:true, attributeFilter:['style']});
-
-  // Also re-check when window resizes (rarely needed but safe)
-  window.addEventListener('resize', ()=> requestAnimationFrame(updateDeadStates));
-
-  // Expose manual hook
-  window.__refreshHpDeadStates = updateDeadStates;
+  window.addEventListener('resize', ()=> requestAnimationFrame(applyAll));
+  window.__applyHpContainerTheme = applyAll;
 })();
 </script>
 
