@@ -238,74 +238,6 @@
 }
 </style>
 
-
-<!-- NON-DESTRUCTIVE UI OVERRIDES -->
-<style id="ui-rescue-overrides">
-/* 1) Hide any PV / Max inline fields in the header (we keep name, color, badge) */
-/* (replaced by JS that hides only the PV field) */
-/* 2) Hide legacy bottom delete buttons (any button that calls removePlayer but isn't our new header delete) */
-.edit-card [onclick*="removePlayer"]:not(.btn-delete){ display:none !important; }
-/* 3) PV center: bold + size & padding to visually match keys */
-.edit-card .big-keys .pv-center{
-  font-weight:700 !important;
-  font-size:1.05rem !important;
-  padding:.45rem .5rem !important;
-  line-height:1.1 !important;
-  border-radius:.5rem !important;
-  width:100% !important;
-}
-</style>
-
-<script id="ui-rescue-inject-trash">
-// Inject a trash button into each edit-card header, with confirmation, without touching existing logic
-(function(){
-  function ensureConfirmHelper(){
-    if (window.confirmAndRemoveInjected) return;
-    window.confirmAndRemoveInjected = true;
-    window.confirmAndRemove = function(id, name){
-      try{
-        const msg = name ? `Supprimer ${name} ?` : 'Supprimer ce joueur ?';
-        if (window.confirm(msg)) removePlayer(Number(id), msg);
-      }catch(e){ console.error('Confirm remove failed:', e); }
-    };
-  }
-  function injectTrash(){
-    document.querySelectorAll('.edit-card .edit-header').forEach(function(header){
-      if (header.querySelector('.btn-delete')) return; // already injected
-      // Try to resolve the player id & name from the closest edit-card attributes/text
-      const card = header.closest('.edit-card');
-      let id = card && (card.dataset.playerId || card.getAttribute('data-player-id') || card.dataset.id || card.getAttribute('data-id'));
-      // Fallback: try to parse from header innerHTML if needed (last resort)
-      if (!id) id = (card && card.id) || 0;
-      let nameInput = header.querySelector('.edit-name');
-      let name = nameInput ? nameInput.value : (header.querySelector('.badge')?.textContent || '').trim();
-      const btn = document.createElement('button');
-      btn.className = 'btn btn-danger btn-delete';
-      btn.type = 'button';
-      btn.innerHTML = '<span aria-hidden="true">🗑️</span><span class="sr-only">Supprimer</span>';
-      btn.onclick = function(){ ensureConfirmHelper(); window.confirmAndRemove(id, name); };
-      // Push to right edge
-      const wrap = document.createElement('div');
-      wrap.className = 'header-actions';
-      wrap.style.marginLeft = 'auto';
-      wrap.style.display = 'flex';
-      wrap.style.alignItems = 'center';
-      wrap.appendChild(btn);
-      header.appendChild(wrap);
-    });
-  }
-  // Run after DOM is ready; also after UI rerenders (simple interval guard)
-  function ready(fn){ if(document.readyState!=='loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
-  ready(function(){
-    injectTrash();
-    // Re-inject after 300ms to catch any render(), then observe mutations lightly
-    setTimeout(injectTrash, 300);
-    const obs = new MutationObserver(function(){ injectTrash(); });
-    obs.observe(document.body, {subtree:true, childList:true});
-  });
-})();
-</script>
-
 </head>
 <body>
   <div class="topbar">
@@ -676,37 +608,5 @@
       window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(console.error); });
     }
   </script>
-
-<script id="ui-rescue-inline-field-filter">
-(function(){
-  function filterInlineFields(){
-    document.querySelectorAll('.edit-card .edit-header').forEach(function(header){
-      var fields = header.querySelectorAll('.inline-field');
-      fields.forEach(function(f){
-        var txt = f.textContent || '';
-        if (/\bmax\b/i.test(txt)) {
-          // Keep the Max field visible and move it just before the header-actions (trash)
-          f.style.display = '';
-          var actions = header.querySelector('.header-actions');
-          if (actions && actions.parentNode === header) {
-            header.insertBefore(f, actions);
-          }
-        } else {
-          // Likely the PV current field: hide it
-          f.style.display = 'none';
-        }
-      });
-    });
-  }
-  function ready(fn){ if(document.readyState!=='loading') fn(); else document.addEventListener('DOMContentLoaded', fn); }
-  ready(function(){
-    filterInlineFields();
-    // Re-apply on mutations to survive re-render
-    const obs = new MutationObserver(filterInlineFields);
-    obs.observe(document.body, {subtree:true, childList:true});
-  });
-})();
-</script>
-
 </body>
 </html>
