@@ -285,7 +285,13 @@
     }
 
     function render() {
-      const sorted = getSortedPlayers();
+  // Sauvegarder quels détails sont ouverts
+  const openDetails = new Set();
+  document.querySelectorAll('details.player-edit[open]').forEach(detail => {
+    openDetails.add(detail.getAttribute('data-player-id'));
+  });
+
+  const sorted = getSortedPlayers();
       const displayArea = document.getElementById('display-area');
       displayArea.innerHTML = sorted.map(p => {
         const percent = Math.round((p.hp / p.max) * 100);
@@ -308,11 +314,11 @@
         `;
       }).join('');
 
-      const edit = document.getElementById('edit-stack');
       edit.innerHTML = players.map(p => {
-        const percent = Math.round((p.hp / p.max) * 100);
-        return `
-          <details class="player-edit" data-player-id="${p.id}">
+  const percent = Math.round((p.hp / p.max) * 100);
+  const isOpen = openDetails.has(String(p.id));  // ← AJOUTER CETTE LIGNE
+  return `
+          <details class="player-edit" data-player-id="${p.id}" ${isOpen ? 'open' : ''}>
             <summary class="edit-summary">
               <span class="pill" style="border-color:${p.color}; color:${p.color}">${percent}%</span>
               <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" />
