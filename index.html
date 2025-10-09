@@ -61,23 +61,21 @@
     .btn-sort { padding:.4rem .7rem; border-radius:10px; border:1px solid var(--border); }
     .btn-sort.active { background:#2563eb; color:#fff; border-color:#3b82f6; }
 
-    /* EDIT UI: non-collapsible player cards */
+    /* EDIT UI: compact header with PV/Max inline */
     .edit-stack { display: flex; flex-direction: column; gap: .6rem; }
     .edit-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
-    .edit-header { display:flex; align-items:center; gap:.6rem; padding:.8rem .8rem; }
+    .edit-header { display:flex; align-items:center; gap:.6rem; padding:.8rem .8rem; flex-wrap: wrap; }
     .pill { font-size:.85rem; font-weight:800; letter-spacing:.02em; padding:.35rem .6rem; border-radius:9999px; background:#0f1419; border:1px solid var(--border); min-width:44px; text-align:center; }
-    .edit-name { flex:1; font-size:1.05rem; font-weight:800; border:0; background:transparent; color:#f4f4f5; outline:none; }
+    .edit-name { flex:1 1 160px; font-size:1.05rem; font-weight:800; border:0; background:transparent; color:#f4f4f5; outline:none; min-width: 140px; }
     .badge { font-size:.8rem; padding:.25rem .5rem; border-radius:9999px; border:1px solid var(--border); color:#e5e7eb; background:#0f1419; }
 
-    .edit-body { padding:.8rem; border-top:1px dashed var(--border); display:grid; grid-template-columns:1fr; gap:.75rem; }
-    .row { display:grid; grid-template-columns: 1fr 1fr; gap:.5rem; align-items:center; }
-    .field { display:flex; align-items:center; gap:.5rem; background:#0f1419; border:1px solid var(--border); border-radius:12px; padding:.5rem .6rem; min-height:44px; }
-    .field label { font-size:.85rem; color:var(--muted); min-width:3.2rem; }
-    .field input[type="number"], .field input[type="text"] { background:transparent; border:0; color:#fff; font-size:1rem; width:100%; outline:none; text-align:center; }
-    .color-pick { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border); background: #0f1419; }
+    .inline-field { display:flex; align-items:center; gap:.35rem; background:#0f1419; border:1px solid var(--border); border-radius:10px; padding:.35rem .45rem; min-height:36px; }
+    .inline-field label { font-size:.8rem; color:var(--muted); }
+    .inline-field input[type="number"] { width:64px; text-align:center; background:transparent; border:0; color:#fff; font-size:.95rem; outline:none; }
 
+    .edit-body { padding:.6rem .8rem .8rem; border-top:1px dashed var(--border); display:grid; grid-template-columns:1fr; gap:.75rem; }
     .big-keys { display:grid; grid-template-columns: repeat(3, 1fr); gap:.5rem; }
-    .key { min-height: 52px; border-radius: 12px; font-weight: 900; font-size: 1.05rem; border: 1px solid var(--border); background: #121828; color: #e5e7eb; }
+    .key { min-height: 48px; border-radius: 12px; font-weight: 900; font-size: 1.05rem; border: 1px solid var(--border); background: #121828; color: #e5e7eb; }
     .key.neg { background: rgba(127,29,29,.55); color: #fecaca; }
     .key.pos { background: rgba(20,83,45,.55); color: #bbf7d0; }
 
@@ -201,7 +199,7 @@
 
     async function removePlayer(id, docId) {
       // UI optimiste
-      players = players.filter(p => p.id !== id);
+      players = players.filter(p => p.id != id);
       render();
 
       if (!USE_FIREBASE) return;
@@ -371,7 +369,7 @@
         `;
       }).join('');
 
-      // EDIT: non-collapsible cards
+      // EDIT: compact header with inline PV/Max
       const edit = document.getElementById('edit-stack');
       edit.innerHTML = players.map(p => {
         const percent = Math.round((p.hp / p.max) * 100);
@@ -381,21 +379,18 @@
             <div class="edit-header">
               <span class="pill" style="border-color:${p.color}; color:${p.color}">${percent}%</span>
               <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" />
+              <div class="inline-field">
+                <label>PV</label>
+                <input type="number" value="${p.hp}" onchange="setHP(${p.id}, parseInt(this.value))">
+              </div>
+              <div class="inline-field">
+                <label>Max</label>
+                <input type="number" value="${p.max}" min="1" onchange="updatePlayer(${p.id}, 'max', parseInt(this.value))">
+              </div>
               <span class="badge">${p.hp}/${p.max}</span>
             </div>
 
             <div class="edit-body">
-              <div class="row">
-                <div class="field">
-                  <label>PV</label>
-                  <input type="number" value="${p.hp}" onchange="setHP(${p.id}, parseInt(this.value))">
-                </div>
-                <div class="field">
-                  <label>Max</label>
-                  <input type="number" value="${p.max}" min="1" onchange="updatePlayer(${p.id}, 'max', parseInt(this.value))">
-                </div>
-              </div>
-
               <div class="big-keys">
                 <button class="key neg" onclick="changeHP(${p.id}, -10)" type="button">-10</button>
                 <button class="key neg" onclick="changeHP(${p.id}, -5)" type="button">-5</button>
@@ -405,7 +400,7 @@
                 <button class="key pos" onclick="changeHP(${p.id}, 10)" type="button">+10</button>
               </div>
 
-              <div class="row">
+              <div style="display:grid; grid-template-columns: auto 1fr; gap:.5rem; align-items:center;">
                 <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)">
                 <div style="display:flex; gap:.5rem; justify-content: flex-end;">
                   <button class="danger-btn" type="button" onclick="setHP(${p.id}, 0)">Dead</button>
