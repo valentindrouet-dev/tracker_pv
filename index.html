@@ -186,6 +186,27 @@
 /* UI Fix 6.4: hide PV/PV Max badge in edit mode */
 .edit-card .badge { display: none !important; }
 
+
+/* UI 6.5: subtle flash feedback on the whole edit card */
+.edit-card { position: relative; }
+.edit-card.flash-pos::after,
+.edit-card.flash-neg::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius: inherit;
+  pointer-events:none;
+  animation: cardFlash 380ms ease-out;
+}
+.edit-card.flash-pos::after{ background: rgba(40, 200, 120, 0.18); }
+.edit-card.flash-neg::after{ background: rgba(220, 60, 60, 0.22); }
+
+@keyframes cardFlash {
+  0%   { opacity: 0; }
+  20%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
 </style>
 
 <style id="ui-step4-compact-override">
@@ -745,6 +766,38 @@
 
   // Expose a global re-align if the app calls render functions we can patch
   window.__alignDeleteNextToMax = applyAll;
+})();
+</script>
+
+
+<script>
+// UI 6.5: flash feedback on edit card when +/- buttons are clicked
+(function(){
+  const flash = (el, cls, dur=380) => {
+    if(!el) return;
+    el.classList.remove(cls);
+    // force reflow so animation can replay
+    void el.offsetWidth;
+    el.classList.add(cls);
+    setTimeout(()=> el.classList.remove(cls), dur);
+  };
+
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest('button');
+    if(!btn) return;
+
+    // Identify +/-/special buttons
+    const txt = (btn.textContent || "").trim();
+    const isNeg = btn.classList.contains('neg') || /^-\d+/.test(txt) || txt.includes('☠');
+    const isPos = btn.classList.contains('pos') || /^\+\d+/.test(txt) || txt.includes('💚');
+
+    if(!(isNeg || isPos)) return;
+
+    const card = btn.closest('.edit-card') || btn.closest('.card');
+    if(!card) return;
+
+    flash(card, isNeg ? 'flash-neg' : 'flash-pos');
+  }, true); // use capture to be non-intrusive
 })();
 </script>
 
