@@ -187,23 +187,29 @@
 .edit-card .badge { display: none !important; }
 
 
-/* UI 6.5: subtle flash feedback on the whole edit card */
+20%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+
+/* UI 6.5b: border-only flash on the whole edit card */
 .edit-card { position: relative; }
 .edit-card.flash-pos::after,
 .edit-card.flash-neg::after{
   content:"";
   position:absolute;
-  inset:0;
+  inset:-2px; /* sits just outside the card so it doesn't shift layout */
   border-radius: inherit;
   pointer-events:none;
-  animation: cardFlash 380ms ease-out;
+  animation: borderFlash 420ms ease-out;
+  background: transparent !important;
 }
-.edit-card.flash-pos::after{ background: rgba(40, 200, 120, 0.18); }
-.edit-card.flash-neg::after{ background: rgba(220, 60, 60, 0.22); }
+.edit-card.flash-pos::after{ box-shadow: 0 0 0 3px rgba(40, 200, 120, 0.55); }
+.edit-card.flash-neg::after{ box-shadow: 0 0 0 3px rgba(220, 60, 60, 0.6); }
 
-@keyframes cardFlash {
+@keyframes borderFlash {
   0%   { opacity: 0; }
-  20%  { opacity: 1; }
+  18%  { opacity: 1; }
   100% { opacity: 0; }
 }
 
