@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Règles pour les salles (rooms)
+    match /rooms/{roomId} {
+      // Règles pour les joueurs
+      match /players/{playerId} {
+        allow read, write: if request.auth != null;
+      }
+
+      // Règles pour les boss/adversaires
+      match /bosses/{bossId} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}
