@@ -421,10 +421,10 @@
     <div class="topbar-inner">
       <h1 class="title">Tableau des Points de Vie</h1>
       <div class="tabs">
-        <button class="tab-btn active" id="tab-display" onclick="setTab('display')">Affichage</button>
-        <button class="tab-btn" id="tab-edit" onclick="setTab('edit')">Édition</button>
+        <button class="tab-btn active" id="tab-display" onclick="setTab('display')" aria-label="Mode affichage">Affichage</button>
+        <button class="tab-btn" id="tab-edit" onclick="setTab('edit')" aria-label="Mode édition">Édition</button>
       </div>
-      <button class="bar-btn" onclick="toggleFullscreen()">Plein écran</button>
+      <button class="bar-btn" onclick="toggleFullscreen()" aria-label="Activer le mode plein écran">Plein écran</button>
     </div>
   </div>
 
@@ -433,9 +433,9 @@
       <div class="display-card">
         <div id="display-area"></div>
         <div class="sort-buttons">
-          <button onclick="sortPlayers('name')" id="sort-name" class="btn-sort">Noms</button>
-          <button onclick="sortPlayers('hpdesc')" id="sort-hpdesc" class="btn-sort">PV Max</button>
-          <button onclick="sortPlayers('hpasc')" id="sort-hpasc" class="btn-sort">PV Min</button>
+          <button onclick="sortPlayers('name')" id="sort-name" class="btn-sort" aria-label="Trier par noms">Noms</button>
+          <button onclick="sortPlayers('hpdesc')" id="sort-hpdesc" class="btn-sort" aria-label="Trier par PV décroissants">PV Max</button>
+          <button onclick="sortPlayers('hpasc')" id="sort-hpasc" class="btn-sort" aria-label="Trier par PV croissants">PV Min</button>
         </div>
       </div>
     </section>
@@ -445,17 +445,22 @@
       <div style="height:.4rem;"></div>
       <div class="display-card" style="margin-top:.2rem;">
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:.4rem;">
-          <button class="btn" onclick="addPlayer()">+ Ajouter</button>
-          <button class="btn" onclick="resetAll()">🔄 Réinitialiser</button>
+          <button class="btn" onclick="addPlayer()" aria-label="Ajouter un nouveau joueur">+ Ajouter</button>
+          <button class="btn" onclick="resetAll()" aria-label="Réinitialiser tous les joueurs aux valeurs par défaut">🔄 Réinitialiser</button>
         </div>
       </div>
     </section>
   </div>
 
   <div id="fullscreen" class="fullscreen">
-    <button onclick="toggleFullscreen()" class="btn fullscreen-close">Quitter le plein écran</button>
+    <button onclick="toggleFullscreen()" class="btn fullscreen-close" aria-label="Quitter le mode plein écran">Quitter le plein écran</button>
     <div id="fullscreen-content" class="fullscreen-content"></div>
   </div>
+
+  <!-- Toast pour notifications d'erreurs/succès -->
+  <div id="toast" style="position:fixed; top:1rem; right:1rem; z-index:999; display:none;
+    padding:.8rem 1.2rem; background:#ef4444; color:white; border-radius:8px;
+    box-shadow:0 4px 12px rgba(0,0,0,.3); font-weight:600; max-width:320px;"></div>
 
   <script>
     function setTab(which) {
@@ -464,6 +469,15 @@
       document.getElementById('section-edit').style.display = isDisplay ? 'none' : '';
       document.getElementById('tab-display').classList.toggle('active', isDisplay);
       document.getElementById('tab-edit').classList.toggle('active', !isDisplay);
+    }
+
+    // Système de notifications toast
+    function showToast(msg, type='error') {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.style.background = type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#f59e0b';
+      toast.style.display = 'block';
+      setTimeout(() => toast.style.display = 'none', type === 'success' ? 2000 : 4000);
     }
 
     const defaultPlayers = [
@@ -510,8 +524,10 @@
           batch2.set(ref, { ...p, __deleted: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
         });
         await batch2.commit();
+        showToast('✅ Réinitialisation réussie', 'success');
       } catch (e) {
         console.error('resetAll failed', e);
+        showToast('⚠️ Erreur de réinitialisation. Réessayez.', 'error');
       }
     }
 
@@ -542,6 +558,7 @@
         }
       } catch (e) {
         console.error('soft delete by id failed', e);
+        showToast('⚠️ Erreur de suppression. Réessayez.', 'error');
       }
     }
 
@@ -660,7 +677,7 @@
               <div class="player-percent">${percent}%</div>
             </div>
             <div class="hp-bar-container" style="background-color: ${bgColor}">
-              <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};">
+              <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};" role="progressbar" aria-valuenow="${p.hp}" aria-valuemin="0" aria-valuemax="${p.max}" aria-label="Points de vie de ${p.name}">
                 ${displayHP}
               </div>
             </div>
@@ -685,7 +702,7 @@
               <div class="player-percent">${percent}%</div>
             </div>
             <div class="hp-bar-container" style="background-color: ${bgColor}">
-              <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};">
+              <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};" role="progressbar" aria-valuenow="${p.hp}" aria-valuemin="0" aria-valuemax="${p.max}" aria-label="Points de vie de ${p.name}">
                 ${displayHP}
               </div>
             </div>
@@ -701,29 +718,29 @@
         return `
           <div class="edit-card" data-player-id="${p.id}">
             <div class="edit-header">
-              <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)">
-              <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" /><div class="inline-field">
+              <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)" aria-label="Couleur de ${p.name}">
+              <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" aria-label="Nom du joueur" /><div class="inline-field">
                 <label>Max</label>
-                <input type="number" value="${p.max}" min="1" onchange="updatePlayer(${p.id}, 'max', parseInt(this.value))">
+                <input type="number" value="${p.max}" min="1" onchange="updatePlayer(${p.id}, 'max', parseInt(this.value))" aria-label="PV maximum de ${p.name}">
               </div>
               <span class="badge">${p.hp}/${p.max}</span>
             </div>
 
             <div class="edit-body">
               <div class="big-keys">
-  <button class="key neg" onclick="setHP(${p.id}, 0)" type="button">☠️</button>
-  <button class="key neg" onclick="changeHP(${p.id}, -10)" type="button">-10</button>
-  <button class="key neg" onclick="changeHP(${p.id}, -5)" type="button">-5</button>
-  <button class="key neg" onclick="changeHP(${p.id}, -1)" type="button">-1</button>
-  <input class="pv-center" type="number" value="${p.hp}" min="0" max="${p.max}" onchange="setHP(${p.id}, parseInt(this.value)||0)">
-  <button class="key pos" onclick="changeHP(${p.id}, 1)" type="button">+1</button>
-  <button class="key pos" onclick="changeHP(${p.id}, 5)" type="button">+5</button>
-  <button class="key pos" onclick="changeHP(${p.id}, 10)" type="button">+10</button>
-  <button class="key pos" onclick="setHP(${p.id}, ${p.max})" type="button">💚</button>
+  <button class="key neg" onclick="setHP(${p.id}, 0)" type="button" aria-label="Mettre ${p.name} à 0 PV">☠️</button>
+  <button class="key neg" onclick="changeHP(${p.id}, -10)" type="button" aria-label="Retirer 10 PV à ${p.name}">-10</button>
+  <button class="key neg" onclick="changeHP(${p.id}, -5)" type="button" aria-label="Retirer 5 PV à ${p.name}">-5</button>
+  <button class="key neg" onclick="changeHP(${p.id}, -1)" type="button" aria-label="Retirer 1 PV à ${p.name}">-1</button>
+  <input class="pv-center" type="number" value="${p.hp}" min="0" max="${p.max}" onchange="setHP(${p.id}, parseInt(this.value)||0)" aria-label="Points de vie de ${p.name}">
+  <button class="key pos" onclick="changeHP(${p.id}, 1)" type="button" aria-label="Ajouter 1 PV à ${p.name}">+1</button>
+  <button class="key pos" onclick="changeHP(${p.id}, 5)" type="button" aria-label="Ajouter 5 PV à ${p.name}">+5</button>
+  <button class="key pos" onclick="changeHP(${p.id}, 10)" type="button" aria-label="Ajouter 10 PV à ${p.name}">+10</button>
+  <button class="key pos" onclick="setHP(${p.id}, ${p.max})" type="button" aria-label="Restaurer ${p.name} au maximum (${p.max} PV)">💚</button>
 </div>
 
               <div style="display:flex; justify-content:flex-end;">
-  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')">🗑️ Supprimer</button>
+  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')" aria-label="Supprimer ${p.name}">🗑️ Supprimer</button>
 </div>
             </div>
           </div>
@@ -766,9 +783,16 @@
       auth.signInAnonymously().catch(console.error);
       db.enablePersistence({ synchronizeTabs: true }).catch((err) => { console.warn('Firestore persistence disabled:', err && err.code); });
 
-      const ROOM_ID = 'AMERTUME_HP';
+      // Multi-rooms: lecture du paramètre URL ?room=XXX
+      const urlParams = new URLSearchParams(window.location.search);
+      const ROOM_ID = urlParams.get('room') || 'AMERTUME_HP';
       window.db = db;
       window.playersCol = db.collection('rooms').doc(ROOM_ID).collection('players');
+
+      // Mise à jour du titre avec le nom de la salle
+      if (ROOM_ID !== 'AMERTUME_HP') {
+        document.querySelector('.title').textContent = `PV Tracker - ${ROOM_ID}`;
+      }
 
       playersCol.orderBy('id').onSnapshot((snap) => {
         players = snap.docs
