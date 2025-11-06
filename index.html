@@ -1152,12 +1152,17 @@
         return;
       }
       const b = { id: nextBossId++, name: "Boss", hp: 100, max: 100, color: "#ef4444", imageUrl: "", __deleted: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-      console.log('Adding boss:', b);
+      console.log('Adding boss with nextBossId:', b.id, 'boss object:', b);
+      console.log('bossesCol path:', bossesCol.path);
       bossesCol.doc(String(b.id)).set(b, { merge: true })
-        .then(() => console.log('Boss added successfully'))
+        .then(() => {
+          console.log('Boss added successfully to Firebase!');
+          showToast('✅ Adversaire ajouté avec succès', 'success');
+        })
         .catch(err => {
-          console.error('Error adding boss:', err);
-          showToast('⚠️ Erreur lors de l\'ajout. Réessayez.', 'error');
+          console.error('Error adding boss - Code:', err.code, 'Message:', err.message);
+          console.error('Full error:', err);
+          showToast(`⚠️ Erreur: ${err.code || 'Vérifiez les règles Firebase'}`, 'error');
         });
     }
 
@@ -1555,6 +1560,8 @@
                 <input type="number" value="${p.max}" min="1" onchange="updatePlayer(${p.id}, 'max', parseInt(this.value))" aria-label="PV maximum de ${p.name}">
               </div>
               <span class="badge">${p.hp}/${p.max}</span>
+              <button class="phone-view-btn" type="button" onclick="openPlayerView(${p.id})" aria-label="Vue mobile pour ${p.name}">📱</button>
+              <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')" aria-label="Supprimer ${p.name}">🗑️</button>
             </div>
 
             <div class="edit-body">
@@ -1568,11 +1575,6 @@
   <button class="key pos" onclick="changeHP(${p.id}, 5)" type="button" aria-label="Ajouter 5 PV à ${p.name}">+5</button>
   <button class="key pos" onclick="changeHP(${p.id}, 10)" type="button" aria-label="Ajouter 10 PV à ${p.name}">+10</button>
   <button class="key pos" onclick="setHP(${p.id}, ${p.max})" type="button" aria-label="Restaurer ${p.name} au maximum (${p.max} PV)">💚</button>
-</div>
-
-              <div style="display:flex; justify-content:flex-end; gap: 0.5rem;">
-  <button class="phone-view-btn" type="button" onclick="openPlayerView(${p.id})" aria-label="Vue mobile pour ${p.name}">📱</button>
-  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')" aria-label="Supprimer ${p.name}">🗑️</button>
 </div>
             </div>
           </div>
