@@ -958,6 +958,11 @@
     <div id="player-view-content" class="player-view-content"></div>
   </div>
 
+  <!-- Vue ennemi individuelle (mobile) -->
+  <div id="boss-view" class="player-view">
+    <div id="boss-view-content" class="player-view-content"></div>
+  </div>
+
   <!-- Toast pour notifications d'erreurs/succès -->
   <div id="toast" style="position:fixed; top:1rem; left:50%; transform:translateX(-50%); z-index:999; display:none;
     padding:.8rem 1.2rem; background:#ef4444; color:white; border-radius:8px;
@@ -1219,6 +1224,13 @@
       if (!USE_FIREBASE) {
         const boss = bosses.find(b => b.id === id);
         if (boss) {
+          // Si blindage actif et dégâts négatifs → désactiver blindage au lieu de perdre HP
+          if (boss.shielded && delta < 0) {
+            boss.shielded = false;
+            render();
+            showToast('🛡️ Blindage absorbe !', 'warning');
+            return;
+          }
           boss.hp = Math.max(0, Math.min(boss.max, boss.hp + delta));
           render();
           flashBoss(id, delta > 0 ? 'up' : 'down');
@@ -1228,6 +1240,12 @@
       bossesCol.doc(String(id)).get().then(snap => {
         const data = snap.data();
         if (!data) return;
+        // Si blindage actif et dégâts négatifs → désactiver blindage au lieu de perdre HP
+        if (data.shielded && delta < 0) {
+          bossesCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+          showToast('🛡️ Blindage absorbe !', 'warning');
+          return;
+        }
         const newHP = Math.max(0, Math.min(data.max, data.hp + delta));
         bossesCol.doc(String(id)).set({ hp: newHP, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
         flashBoss(id, delta > 0 ? 'up' : 'down');
@@ -1242,6 +1260,132 @@
         el.classList.add(direction === 'up' ? 'flash-up' : 'flash-down');
         setTimeout(() => el.classList.remove('flash-up', 'flash-down'), 300);
       }
+    }
+
+    function toggleBossShield(id) {
+      if (!USE_FIREBASE) {
+        const boss = bosses.find(b => b.id === id);
+        if (boss) {
+          boss.shielded = !boss.shielded;
+          render();
+        }
+        return;
+      }
+      bossesCol.doc(String(id)).get().then(snap => {
+        const current = snap.data()?.shielded || false;
+        bossesCol.doc(String(id)).set({ shielded: !current, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      });
+    }
+
+    function toggleBossHidden(id) {
+      if (!USE_FIREBASE) {
+        const boss = bosses.find(b => b.id === id);
+        if (boss) {
+          boss.hidden = !boss.hidden;
+          render();
+        }
+        return;
+      }
+      bossesCol.doc(String(id)).get().then(snap => {
+        const current = snap.data()?.hidden || false;
+        bossesCol.doc(String(id)).set({ hidden: !current, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      });
+    }
+
+    let currentBossViewId = null;
+
+    function openBossView(id) {
+      currentBossViewId = id;
+      const bv = document.getElementById('boss-view');
+      bv.classList.add('active');
+      renderBossView();
+      document.documentElement.requestFullscreen?.();
+    }
+
+    function closeBossView() {
+      const bv = document.getElementById('boss-view');
+      bv.classList.remove('active');
+      currentBossViewId = null;
+      document.exitFullscreen?.();
+    }
+
+    function renderBossView() {
+      if (!currentBossViewId) return;
+      const boss = bosses.find(b => b.id === currentBossViewId);
+      if (!boss) {
+        closeBossView();
+        return;
+      }
+
+      const percent = Math.round((boss.hp / boss.max) * 100);
+      const enemyColor = boss.color || '#7D7E7E';
+
+      // Create gradient based on enemy type
+      let gradient, borderColor, nameColor;
+      if (enemyColor.toUpperCase() === '#846BAF') {
+        gradient = 'linear-gradient(90deg, #5a4a7d, #846BAF)';
+        borderColor = 'rgba(132, 107, 175, 0.6)';
+        nameColor = '#846BAF';
+      } else if (enemyColor.toUpperCase() === '#BF5750') {
+        gradient = 'linear-gradient(90deg, #7f1d1d, #BF5750)';
+        borderColor = 'rgba(191, 87, 80, 0.6)';
+        nameColor = '#BF5750';
+      } else {
+        gradient = 'linear-gradient(90deg, #4a4a4a, #7D7E7E)';
+        borderColor = 'rgba(125, 126, 126, 0.6)';
+        nameColor = '#7D7E7E';
+      }
+
+      const displayHP = boss.hp === 0 ? '0' : boss.hp;
+      const shieldIcon = boss.shielded ? '<span class="hp-bar-shield" style="font-size: 3rem;">🛡️</span>' : '';
+      const shieldedClass = boss.shielded ? ' shielded' : '';
+
+      const content = document.getElementById('boss-view-content');
+      content.innerHTML = `
+        <div class="player-view-header">
+          <div class="player-view-name" style="color: ${nameColor}">${boss.name}</div>
+        </div>
+
+        <div class="player-view-hp-display">
+          <div class="player-view-hp-bar-container${shieldedClass}" style="border-color: ${borderColor};">
+            ${shieldIcon}
+            <div class="player-view-hp-bar" style="width: ${percent}%; background: ${gradient}; color: transparent;">
+              ${displayHP}
+            </div>
+          </div>
+
+          <div class="player-view-stats">
+            <div>${boss.hp} / ${boss.max} PV</div>
+            <div>${percent}%</div>
+          </div>
+
+          <div class="player-view-controls">
+            <div class="player-view-controls-row">
+              <button class="player-view-btn neg" onclick="changeBossHP(${boss.id}, -10); renderBossView();">-10</button>
+              <button class="player-view-btn neg" onclick="changeBossHP(${boss.id}, -5); renderBossView();">-5</button>
+              <button class="player-view-btn neg" onclick="changeBossHP(${boss.id}, -1); renderBossView();">-1</button>
+              <button class="player-view-btn neg" onclick="updateBoss(${boss.id}, 'hp', 0); renderBossView();">☠️</button>
+            </div>
+            <div class="player-view-controls-hp">
+              <input class="player-view-btn pv-input" type="number" value="${boss.hp}" min="0" max="${boss.max}" onchange="updateBoss(${boss.id}, 'hp', parseInt(this.value)||0); renderBossView();" />
+            </div>
+            <div class="player-view-controls-row">
+              <button class="player-view-btn pos" onclick="changeBossHP(${boss.id}, 1); renderBossView();">+1</button>
+              <button class="player-view-btn pos" onclick="changeBossHP(${boss.id}, 5); renderBossView();">+5</button>
+              <button class="player-view-btn pos" onclick="changeBossHP(${boss.id}, 10); renderBossView();">+10</button>
+              <button class="player-view-btn pos" onclick="updateBoss(${boss.id}, 'hp', ${boss.max}); renderBossView();">💚</button>
+            </div>
+          </div>
+
+          <button class="player-view-shield-btn ${boss.shielded ? 'active' : ''}" onclick="toggleBossShield(${boss.id}); renderBossView();">
+            🛡️ Blindage ${boss.shielded ? '(ACTIF)' : ''}
+          </button>
+        </div>
+
+        <button class="player-view-close" onclick="closeBossView();">
+          ✕ Fermer
+        </button>
+      `;
     }
 
     const debounceMap = new Map();
@@ -1514,11 +1658,12 @@
         `;
       }).join('');
 
-      // Enemies display section - colored bars without HP values
-      if (bosses.length > 0) {
+      // Enemies display section - colored bars without HP values (only show non-hidden enemies)
+      const visibleBosses = bosses.filter(b => !b.hidden);
+      if (visibleBosses.length > 0) {
         displayArea.innerHTML += `
           <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid rgba(220, 38, 38, 0.3);">
-            ${bosses.map(b => {
+            ${visibleBosses.map(b => {
               const percent = Math.round((b.hp / b.max) * 100);
               const enemyColor = b.color || '#7D7E7E'; // Default to Sbire
 
@@ -1603,8 +1748,9 @@
       mjStack.innerHTML = bosses.map(b => {
         const percent = Math.round((b.hp / b.max) * 100);
         const docId = b._docId || String(b.id);
+        const shieldedClass = b.shielded ? ' shielded' : (percent <= 10 && b.hp > 0 ? ' critical' : '');
         return `
-          <div class="edit-card" data-boss-id="${b.id}">
+          <div class="edit-card${shieldedClass}" data-boss-id="${b.id}">
             <div class="edit-header">
               <select onchange="updateBoss(${b.id}, 'color', this.value)" aria-label="Type d'ennemi" style="padding: .3rem .5rem; border-radius: 8px; border: 1px solid var(--border); background: #121828; color: #e5e7eb; font-size: .8rem; font-weight: 600; cursor: pointer;">
                 <option value="#846BAF" ${(b.color === '#846BAF' || b.color === '#846baf') ? 'selected' : ''}>Unique</option>
@@ -1612,12 +1758,19 @@
                 <option value="#7D7E7E" ${(b.color === '#7D7E7E' || b.color === '#7d7e7e' || !b.color || b.color === '#dc2626') ? 'selected' : ''}>Sbire</option>
               </select>
               <input class="edit-name" value="${b.name}" onchange="updateBoss(${b.id}, 'name', this.value)" aria-label="Nom de l'ennemi" placeholder="Nom de l'ennemi" />
+              <button class="shield-btn ${b.shielded ? 'active' : ''}" type="button" onclick="toggleBossShield(${b.id})" aria-label="Activer/Désactiver le blindage de ${b.name}">
+                🛡️ Blindage
+              </button>
               <div class="inline-field">
                 <label>Max</label>
                 <input type="number" value="${b.max}" min="1" onchange="updateBoss(${b.id}, 'max', parseInt(this.value))" aria-label="PV maximum de ${b.name}">
               </div>
               <span class="badge">${b.hp}/${b.max}</span>
               <button class="danger-btn" type="button" onclick="removeBoss(${b.id}, '${docId}')" aria-label="Supprimer ${b.name}">🗑️</button>
+              <button class="phone-view-btn" type="button" onclick="openBossView(${b.id})" aria-label="Vue mobile pour ${b.name}">📱</button>
+              <button class="shield-btn ${b.hidden ? '' : 'active'}" type="button" onclick="toggleBossHidden(${b.id})" aria-label="Cacher/Révéler ${b.name}">
+                ${b.hidden ? '👁️ Révéler' : '🙈 Cacher'}
+              </button>
             </div>
 
             <div class="edit-body">
@@ -1644,14 +1797,20 @@
 
       const pv = document.getElementById('player-view');
       if (pv && pv.classList.contains('active') && currentPlayerViewId) renderPlayerView();
+
+      const bv = document.getElementById('boss-view');
+      if (bv && bv.classList.contains('active') && currentBossViewId) renderBossView();
     }
 
     document.addEventListener('keydown', (e) => {
       if ((e.key || '').toLowerCase() === 'f') toggleFullscreen();
       if (e.key === 'Escape') {
         const pv = document.getElementById('player-view');
+        const bv = document.getElementById('boss-view');
         if (pv && pv.classList.contains('active')) {
           closePlayerView();
+        } else if (bv && bv.classList.contains('active')) {
+          closeBossView();
         } else {
           const fs = document.getElementById('fullscreen');
           if (fs.classList.contains('active')) toggleFullscreen();
