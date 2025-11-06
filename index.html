@@ -338,7 +338,7 @@
   50% { opacity: 0.7; }
 }
 
-/* Gros bouclier centré dans la barre HP */
+/* Gros bouclier centré dans la barre HP (fixe) */
 .hp-bar-shield {
   position: absolute;
   top: 50%;
@@ -347,13 +347,7 @@
   font-size: 2rem;
   z-index: 10;
   filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.9));
-  animation: shieldBigPulse 2s ease-in-out infinite;
   pointer-events: none;
-}
-
-@keyframes shieldBigPulse {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.9)); }
-  50% { transform: translate(-50%, -50%) scale(1.15); filter: drop-shadow(0 0 12px rgba(59, 130, 246, 1)); }
 }
 
 /* Bouton blindage compact pour header */
