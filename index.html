@@ -401,6 +401,212 @@
   }
 }
 
+/* === BOSS SYSTEM: Circular HP Bars === */
+.boss-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--border);
+}
+
+.boss-section-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ef4444;
+  margin-bottom: 0.8rem;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.boss-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  justify-items: center;
+}
+
+.boss-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.boss-circular-bar {
+  position: relative;
+  width: 140px;
+  height: 140px;
+}
+
+.boss-circular-bg {
+  transform: rotate(-90deg);
+}
+
+.boss-circular-progress {
+  transform: rotate(-90deg);
+  transition: stroke-dashoffset 0.35s ease;
+}
+
+.boss-image-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #0f1419;
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.boss-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.boss-image-placeholder {
+  font-size: 3rem;
+  filter: grayscale(0.3);
+}
+
+.boss-hp-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.boss-name {
+  font-size: 1rem;
+  font-weight: 800;
+  text-align: center;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.boss-percent {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* Boss edit cards */
+.boss-edit-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--border);
+}
+
+.boss-edit-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #ef4444;
+  margin-bottom: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.add-boss-btn {
+  width: 100%;
+  padding: 0.6rem;
+  margin-bottom: 0.6rem;
+  background: var(--panel-plain);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: #ef4444;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-boss-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+}
+
+.boss-edit-card {
+  background: var(--panel);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 14px;
+  padding: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.boss-edit-header {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.boss-image-input {
+  flex: 1 1 100%;
+  font-size: 0.85rem;
+  padding: 0.4rem;
+  background: #0f1419;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: #e5e7eb;
+  outline: none;
+}
+
+.boss-image-input::placeholder {
+  color: var(--muted);
+}
+
+.boss-edit-controls {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.delete-boss-btn {
+  padding: 0.4rem 0.6rem;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Boss flash animations */
+.boss-display.flash-up {
+  animation: bossFlashUp 300ms ease-out;
+}
+
+.boss-display.flash-down {
+  animation: bossFlashDown 300ms ease-out;
+}
+
+@keyframes bossFlashUp {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); box-shadow: 0 0 20px rgba(34, 197, 94, 0.6); }
+  100% { transform: scale(1); }
+}
+
+@keyframes bossFlashDown {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.92); box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); }
+  100% { transform: scale(1); }
+}
+
 </style>
 
 <style id="ui-step4-compact-override">
@@ -579,29 +785,64 @@
       { id: 5, name: "Lamevent", hp: 28, max: 50, color: "#60a853", shielded: false }
     ];
 
+    const defaultBosses = [];
+
     let players = [];
+    let bosses = [];
     let sortMode = 'none';
     let nextId = 6;
+    let nextBossId = 1;
     const USE_FIREBASE = true;
 
-    function saveData() { if (!USE_FIREBASE) localStorage.setItem('pv-tracker-v1', JSON.stringify(players)); }
+    function saveData() {
+      if (!USE_FIREBASE) {
+        localStorage.setItem('pv-tracker-v1', JSON.stringify({ players, bosses }));
+      }
+    }
     function loadData() {
       if (!USE_FIREBASE) {
         const saved = localStorage.getItem('pv-tracker-v1');
         if (saved) {
-          try { players = JSON.parse(saved); nextId = players.length ? Math.max(...players.map(p => p.id)) + 1 : 1; }
-          catch { players = JSON.parse(JSON.stringify(defaultPlayers)); nextId = 6; }
-        } else { players = JSON.parse(JSON.stringify(defaultPlayers)); nextId = 6; }
+          try {
+            const data = JSON.parse(saved);
+            if (data.players) {
+              players = data.players;
+              bosses = data.bosses || [];
+              nextId = players.length ? Math.max(...players.map(p => p.id)) + 1 : 1;
+              nextBossId = bosses.length ? Math.max(...bosses.map(b => b.id)) + 1 : 1;
+            } else {
+              // Old format compatibility
+              players = data;
+              bosses = [];
+              nextId = players.length ? Math.max(...players.map(p => p.id)) + 1 : 1;
+              nextBossId = 1;
+            }
+          }
+          catch {
+            players = JSON.parse(JSON.stringify(defaultPlayers));
+            bosses = JSON.parse(JSON.stringify(defaultBosses));
+            nextId = 6;
+            nextBossId = 1;
+          }
+        } else {
+          players = JSON.parse(JSON.stringify(defaultPlayers));
+          bosses = JSON.parse(JSON.stringify(defaultBosses));
+          nextId = 6;
+          nextBossId = 1;
+        }
       }
     }
 
     async function resetAll() {
       if (!USE_FIREBASE) {
         players = JSON.parse(JSON.stringify(defaultPlayers));
+        bosses = JSON.parse(JSON.stringify(defaultBosses));
         nextId = 6;
+        nextBossId = 1;
         return render();
       }
       try {
+        // Reset players
         const snap = await playersCol.get();
         const batch1 = db.batch();
         snap.forEach(doc => {
@@ -615,6 +856,15 @@
           batch2.set(ref, { ...p, __deleted: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
         });
         await batch2.commit();
+
+        // Reset bosses
+        const bossSnap = await bossesCol.get();
+        const batch3 = db.batch();
+        bossSnap.forEach(doc => {
+          batch3.set(doc.ref, { __deleted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        });
+        await batch3.commit();
+
         showToast('✅ Réinitialisation réussie', 'success');
       } catch (e) {
         console.error('resetAll failed', e);
@@ -693,6 +943,80 @@
         const current = snap.data()?.shielded || false;
         return playersCol.doc(String(id)).set({ shielded: !current, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       });
+    }
+
+    // === BOSS SYSTEM FUNCTIONS ===
+    function addBoss() {
+      if (!USE_FIREBASE) {
+        bosses.push({ id: nextBossId++, name: "Boss", hp: 100, max: 100, color: "#ef4444", imageUrl: "" });
+        render();
+        return;
+      }
+      const b = { id: nextBossId++, name: "Boss", hp: 100, max: 100, color: "#ef4444", imageUrl: "", __deleted: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      bossesCol.doc(String(b.id)).set(b, { merge: true });
+    }
+
+    async function removeBoss(id, docId) {
+      bosses = bosses.filter(b => b.id != id);
+      render();
+
+      if (!USE_FIREBASE) return;
+      try {
+        if (docId) {
+          await bossesCol.doc(docId).set({ __deleted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+          return;
+        }
+      } catch (e) {
+        console.warn('soft delete boss by docId failed', e);
+      }
+      try {
+        const q = await bossesCol.where('id', '==', id).limit(1).get();
+        if (!q.empty) {
+          await q.docs[0].ref.set({ __deleted: true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        }
+      } catch (e) {
+        console.error('soft delete boss by id failed', e);
+        showToast('⚠️ Erreur de suppression. Réessayez.', 'error');
+      }
+    }
+
+    function updateBoss(id, field, val) {
+      if (!USE_FIREBASE) {
+        const boss = bosses.find(b => b.id === id);
+        if (boss) { boss[field] = val; render(); }
+        return;
+      }
+      const upd = { [field]: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      bossesCol.doc(String(id)).set(upd, { merge: true });
+    }
+
+    function changeBossHP(id, delta) {
+      if (!USE_FIREBASE) {
+        const boss = bosses.find(b => b.id === id);
+        if (boss) {
+          boss.hp = Math.max(0, Math.min(boss.max, boss.hp + delta));
+          render();
+          flashBoss(id, delta > 0 ? 'up' : 'down');
+        }
+        return;
+      }
+      bossesCol.doc(String(id)).get().then(snap => {
+        const data = snap.data();
+        if (!data) return;
+        const newHP = Math.max(0, Math.min(data.max, data.hp + delta));
+        bossesCol.doc(String(id)).set({ hp: newHP, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        flashBoss(id, delta > 0 ? 'up' : 'down');
+      });
+    }
+
+    function flashBoss(id, direction) {
+      const el = document.querySelector(`.boss-display[data-boss-id="${id}"]`);
+      if (el) {
+        el.classList.remove('flash-up', 'flash-down');
+        void el.offsetWidth;
+        el.classList.add(direction === 'up' ? 'flash-up' : 'flash-down');
+        setTimeout(() => el.classList.remove('flash-up', 'flash-down'), 300);
+      }
     }
 
     const debounceMap = new Map();
@@ -829,6 +1153,41 @@
           </div>
         `;
       }).join('');
+
+      // Boss display in fullscreen
+      if (bosses.length > 0) {
+        content.innerHTML += `
+          <div class="boss-section">
+            <div class="boss-section-title">⚔️ Adversaires</div>
+            <div class="boss-grid">
+              ${bosses.map(b => {
+                const percent = Math.round((b.hp / b.max) * 100);
+                const circumference = 2 * Math.PI * 60;
+                const offset = circumference - (percent / 100) * circumference;
+                const imageContent = b.imageUrl
+                  ? `<img src="${b.imageUrl}" class="boss-image" alt="${b.name}" />`
+                  : `<div class="boss-image-placeholder">💀</div>`;
+                return `
+                  <div class="boss-display" data-boss-id="${b.id}">
+                    <div class="boss-circular-bar">
+                      <svg width="140" height="140">
+                        <circle class="boss-circular-bg" cx="70" cy="70" r="60" fill="none" stroke="rgba(71,85,105,0.3)" stroke-width="8" />
+                        <circle class="boss-circular-progress" cx="70" cy="70" r="60" fill="none" stroke="${b.color}" stroke-width="8" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" />
+                      </svg>
+                      <div class="boss-image-container">
+                        ${imageContent}
+                      </div>
+                      <div class="boss-hp-text">${b.hp}</div>
+                    </div>
+                    <div class="boss-name" style="color: ${b.color}">${b.name}</div>
+                    <div class="boss-percent">${percent}%</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
     }
 
     function render() {
@@ -858,6 +1217,42 @@
           </div>
         `;
       }).join('');
+
+      // Boss display section
+      if (bosses.length > 0) {
+        displayArea.innerHTML += `
+          <div class="boss-section">
+            <div class="boss-section-title">⚔️ Adversaires</div>
+            <div class="boss-grid">
+              ${bosses.map(b => {
+                const percent = Math.round((b.hp / b.max) * 100);
+                const barColor = getHealthColor(percent);
+                const circumference = 2 * Math.PI * 60;
+                const offset = circumference - (percent / 100) * circumference;
+                const imageContent = b.imageUrl
+                  ? `<img src="${b.imageUrl}" class="boss-image" alt="${b.name}" />`
+                  : `<div class="boss-image-placeholder">💀</div>`;
+                return `
+                  <div class="boss-display" data-boss-id="${b.id}">
+                    <div class="boss-circular-bar">
+                      <svg width="140" height="140">
+                        <circle class="boss-circular-bg" cx="70" cy="70" r="60" fill="none" stroke="rgba(71,85,105,0.3)" stroke-width="8" />
+                        <circle class="boss-circular-progress" cx="70" cy="70" r="60" fill="none" stroke="${b.color}" stroke-width="8" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" />
+                      </svg>
+                      <div class="boss-image-container">
+                        ${imageContent}
+                      </div>
+                      <div class="boss-hp-text">${b.hp}</div>
+                    </div>
+                    <div class="boss-name" style="color: ${b.color}">${b.name}</div>
+                    <div class="boss-percent">${percent}%</div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
 
       // EDIT: compact header with inline PV/Max
       const edit = document.getElementById('edit-stack');
@@ -901,6 +1296,48 @@
         `;
       }).join('');
 
+      // Boss edit section
+      edit.innerHTML += `
+        <div class="boss-edit-section">
+          <div class="boss-edit-title">⚔️ Adversaires</div>
+          <button class="add-boss-btn" onclick="addBoss()" type="button">+ Ajouter un adversaire</button>
+          ${bosses.map(b => {
+            const percent = Math.round((b.hp / b.max) * 100);
+            const docId = b._docId || String(b.id);
+            return `
+              <div class="boss-edit-card" data-boss-id="${b.id}">
+                <div class="boss-edit-header">
+                  <input class="color-pick" type="color" value="${b.color}" onchange="updateBoss(${b.id}, 'color', this.value)" aria-label="Couleur de ${b.name}">
+                  <input class="edit-name" value="${b.name}" onchange="updateBoss(${b.id}, 'name', this.value)" aria-label="Nom de l'adversaire" placeholder="Nom" style="flex: 1 1 140px;" />
+                  <div class="inline-field">
+                    <label>Max</label>
+                    <input type="number" value="${b.max}" min="1" onchange="updateBoss(${b.id}, 'max', parseInt(this.value))" aria-label="PV maximum de ${b.name}">
+                  </div>
+                  <span class="badge">${b.hp}/${b.max}</span>
+                  <input class="boss-image-input" type="text" value="${b.imageUrl || ''}" onchange="updateBoss(${b.id}, 'imageUrl', this.value)" placeholder="URL de l'image (optionnel)" aria-label="URL de l'image pour ${b.name}" />
+                </div>
+                <div class="edit-body">
+                  <div class="big-keys">
+                    <button class="key neg" onclick="updateBoss(${b.id}, 'hp', 0)" type="button" aria-label="Mettre ${b.name} à 0 PV">☠️</button>
+                    <button class="key neg" onclick="changeBossHP(${b.id}, -20)" type="button" aria-label="Retirer 20 PV à ${b.name}">-20</button>
+                    <button class="key neg" onclick="changeBossHP(${b.id}, -10)" type="button" aria-label="Retirer 10 PV à ${b.name}">-10</button>
+                    <button class="key neg" onclick="changeBossHP(${b.id}, -5)" type="button" aria-label="Retirer 5 PV à ${b.name}">-5</button>
+                    <input class="pv-center" type="number" value="${b.hp}" min="0" max="${b.max}" onchange="updateBoss(${b.id}, 'hp', parseInt(this.value)||0)" aria-label="Points de vie de ${b.name}">
+                    <button class="key pos" onclick="changeBossHP(${b.id}, 5)" type="button" aria-label="Ajouter 5 PV à ${b.name}">+5</button>
+                    <button class="key pos" onclick="changeBossHP(${b.id}, 10)" type="button" aria-label="Ajouter 10 PV à ${b.name}">+10</button>
+                    <button class="key pos" onclick="changeBossHP(${b.id}, 20)" type="button" aria-label="Ajouter 20 PV à ${b.name}">+20</button>
+                    <button class="key pos" onclick="updateBoss(${b.id}, 'hp', ${b.max})" type="button" aria-label="Restaurer ${b.name} au maximum">💚</button>
+                  </div>
+                  <div style="display:flex; justify-content:flex-end; margin-top: 0.5rem;">
+                    <button class="delete-boss-btn" type="button" onclick="removeBoss(${b.id}, '${docId}')" aria-label="Supprimer ${b.name}">🗑️ Supprimer</button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+
       saveData();
 
       const fs = document.getElementById('fullscreen');
@@ -942,6 +1379,7 @@
       const ROOM_ID = urlParams.get('room') || 'AMERTUME_HP';
       window.db = db;
       window.playersCol = db.collection('rooms').doc(ROOM_ID).collection('players');
+      window.bossesCol = db.collection('rooms').doc(ROOM_ID).collection('bosses');
 
       // Mise à jour du titre avec le nom de la salle
       if (ROOM_ID !== 'AMERTUME_HP') {
@@ -953,6 +1391,14 @@
           .map(d => ({ ...d.data(), _docId: d.id }))
           .filter(p => !p.__deleted);
         nextId = players.length ? Math.max(...players.map(p => p.id)) + 1 : 1;
+        render();
+      });
+
+      bossesCol.orderBy('id').onSnapshot((snap) => {
+        bosses = snap.docs
+          .map(d => ({ ...d.data(), _docId: d.id }))
+          .filter(b => !b.__deleted);
+        nextBossId = bosses.length ? Math.max(...bosses.map(b => b.id)) + 1 : 1;
         render();
       });
     }
