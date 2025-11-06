@@ -150,7 +150,8 @@
     .key.neg { background: rgba(127,29,29,.5); color: #fecaca; }
     .key.pos { background: rgba(20,83,45,.5); color: #bbf7d0; }
 
-    .danger-btn { background: rgba(127,29,29,.45); color:#fecaca; border:1px solid #991b1b; padding:.45rem .6rem; border-radius: 10px; font-weight:700; font-size:.9rem; }
+    .danger-btn { background: rgba(127,29,29,.45); color:#fecaca; border:1px solid #991b1b; padding:.45rem .6rem; border-radius: 10px; font-weight:700; font-size:.9rem; cursor: pointer; transition: all 0.2s; }
+    .danger-btn:hover { background: rgba(127,29,29,.65); box-shadow: 0 2px 4px rgba(127,29,29,.4); }
     .btn { cursor:pointer; }
 
     .color-pick { width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--border); background: #0f1419; }
@@ -340,15 +341,20 @@
       background: linear-gradient(135deg, #6366f1, #8b5cf6);
       border: 1px solid #7c3aed;
       color: #fff;
-      font-size: 0.85rem;
+      font-size: 1.2rem;
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
       transition: all 0.2s;
+      min-width: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
     .phone-view-btn:hover {
       background: linear-gradient(135deg, #7c3aed, #a78bfa);
       box-shadow: 0 4px 8px rgba(99, 102, 241, 0.4);
+      transform: scale(1.05);
     }
   
 /* === Micro-ajustement PV central (visuel seulement) === */
@@ -1134,13 +1140,25 @@
 
     // === BOSS SYSTEM FUNCTIONS ===
     function addBoss() {
+      console.log('addBoss called, USE_FIREBASE:', USE_FIREBASE, 'bossesCol:', bossesCol);
       if (!USE_FIREBASE) {
         bosses.push({ id: nextBossId++, name: "Boss", hp: 100, max: 100, color: "#ef4444", imageUrl: "" });
         render();
         return;
       }
+      if (!bossesCol) {
+        console.error('bossesCol not initialized yet');
+        showToast('⚠️ Initialisation en cours, réessayez dans un instant', 'error');
+        return;
+      }
       const b = { id: nextBossId++, name: "Boss", hp: 100, max: 100, color: "#ef4444", imageUrl: "", __deleted: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-      bossesCol.doc(String(b.id)).set(b, { merge: true });
+      console.log('Adding boss:', b);
+      bossesCol.doc(String(b.id)).set(b, { merge: true })
+        .then(() => console.log('Boss added successfully'))
+        .catch(err => {
+          console.error('Error adding boss:', err);
+          showToast('⚠️ Erreur lors de l\'ajout. Réessayez.', 'error');
+        });
     }
 
     async function removeBoss(id, docId) {
@@ -1552,9 +1570,9 @@
   <button class="key pos" onclick="setHP(${p.id}, ${p.max})" type="button" aria-label="Restaurer ${p.name} au maximum (${p.max} PV)">💚</button>
 </div>
 
-              <div style="display:flex; justify-content:space-between; gap: 0.5rem;">
-  <button class="phone-view-btn" type="button" onclick="openPlayerView(${p.id})" aria-label="Vue mobile pour ${p.name}">📱 Vue Joueur</button>
-  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')" aria-label="Supprimer ${p.name}">🗑️ Supprimer</button>
+              <div style="display:flex; justify-content:flex-end; gap: 0.5rem;">
+  <button class="phone-view-btn" type="button" onclick="openPlayerView(${p.id})" aria-label="Vue mobile pour ${p.name}">📱</button>
+  <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')" aria-label="Supprimer ${p.name}">🗑️</button>
 </div>
             </div>
           </div>
