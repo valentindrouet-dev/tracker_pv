@@ -268,9 +268,18 @@
       margin-bottom: 1.5rem;
     }
     .player-view-controls {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      display: flex;
+      flex-direction: column;
       gap: 0.8rem;
+    }
+    .player-view-controls-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.8rem;
+    }
+    .player-view-controls-hp {
+      display: flex;
+      justify-content: center;
     }
     .player-view-btn {
       min-height: 70px;
@@ -298,11 +307,11 @@
       border-color: #10b981;
     }
     .player-view-btn.pv-input {
-      grid-column: span 1;
       font-size: 2rem;
       text-align: center;
       background: #0f1419;
       color: #fff;
+      width: 200px;
     }
     .player-view-shield-btn {
       width: 100%;
@@ -336,13 +345,13 @@
       cursor: pointer;
     }
     .phone-view-btn {
-      padding: .3rem .5rem;
-      border-radius: 8px;
+      padding: .45rem .6rem;
+      border-radius: 10px;
       border: 1px solid var(--border);
       background: #121828;
       color: #e5e7eb;
-      font-size: 1rem;
-      font-weight: 600;
+      font-size: .9rem;
+      font-weight: 700;
       cursor: pointer;
       transition: all 0.2s;
       white-space: nowrap;
@@ -1385,15 +1394,21 @@
           </div>
 
           <div class="player-view-controls">
-            <button class="player-view-btn neg" onclick="changeHP(${player.id}, -10); renderPlayerView();">-10</button>
-            <button class="player-view-btn neg" onclick="changeHP(${player.id}, -5); renderPlayerView();">-5</button>
-            <button class="player-view-btn neg" onclick="changeHP(${player.id}, -1); renderPlayerView();">-1</button>
-            <button class="player-view-btn neg" onclick="setHP(${player.id}, 0); renderPlayerView();">☠️</button>
-            <input class="player-view-btn pv-input" type="number" value="${player.hp}" min="0" max="${player.max}" onchange="setHP(${player.id}, parseInt(this.value)||0); renderPlayerView();" />
-            <button class="player-view-btn pos" onclick="changeHP(${player.id}, 1); renderPlayerView();">+1</button>
-            <button class="player-view-btn pos" onclick="changeHP(${player.id}, 5); renderPlayerView();">+5</button>
-            <button class="player-view-btn pos" onclick="changeHP(${player.id}, 10); renderPlayerView();">+10</button>
-            <button class="player-view-btn pos" onclick="setHP(${player.id}, ${player.max}); renderPlayerView();">💚</button>
+            <div class="player-view-controls-row">
+              <button class="player-view-btn neg" onclick="changeHP(${player.id}, -10); renderPlayerView();">-10</button>
+              <button class="player-view-btn neg" onclick="changeHP(${player.id}, -5); renderPlayerView();">-5</button>
+              <button class="player-view-btn neg" onclick="changeHP(${player.id}, -1); renderPlayerView();">-1</button>
+              <button class="player-view-btn neg" onclick="setHP(${player.id}, 0); renderPlayerView();">☠️</button>
+            </div>
+            <div class="player-view-controls-hp">
+              <input class="player-view-btn pv-input" type="number" value="${player.hp}" min="0" max="${player.max}" onchange="setHP(${player.id}, parseInt(this.value)||0); renderPlayerView();" />
+            </div>
+            <div class="player-view-controls-row">
+              <button class="player-view-btn pos" onclick="changeHP(${player.id}, 1); renderPlayerView();">+1</button>
+              <button class="player-view-btn pos" onclick="changeHP(${player.id}, 5); renderPlayerView();">+5</button>
+              <button class="player-view-btn pos" onclick="changeHP(${player.id}, 10); renderPlayerView();">+10</button>
+              <button class="player-view-btn pos" onclick="setHP(${player.id}, ${player.max}); renderPlayerView();">💚</button>
+            </div>
           </div>
 
           <button class="player-view-shield-btn ${player.shielded ? 'active' : ''}" onclick="toggleShield(${player.id}); renderPlayerView();">
@@ -1556,8 +1571,8 @@
                 <input type="number" value="${p.max}" min="1" onchange="updatePlayer(${p.id}, 'max', parseInt(this.value))" aria-label="PV maximum de ${p.name}">
               </div>
               <span class="badge">${p.hp}/${p.max}</span>
-              <button class="phone-view-btn" type="button" onclick="openPlayerView(${p.id})" aria-label="Vue mobile pour ${p.name}">📱</button>
               <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')" aria-label="Supprimer ${p.name}">🗑️</button>
+              <button class="phone-view-btn" type="button" onclick="openPlayerView(${p.id})" aria-label="Vue mobile pour ${p.name}">📱</button>
             </div>
 
             <div class="edit-body">
