@@ -1303,6 +1303,19 @@
       });
     }
 
+    function killBoss(id) {
+      if (!USE_FIREBASE) {
+        const boss = bosses.find(b => b.id === id);
+        if (boss) {
+          boss.hp = 0;
+          boss.shielded = false;
+          render();
+        }
+        return;
+      }
+      bossesCol.doc(String(id)).set({ hp: 0, shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    }
+
     function flashBoss(id, direction) {
       const el = document.querySelector(`.boss-display[data-boss-id="${id}"]`);
       if (el) {
@@ -1869,14 +1882,14 @@
               <button class="phone-view-btn" type="button" onclick="moveBoss(${b.id}, 'down')" aria-label="Déplacer ${b.name} vers le bas" ${isLast ? 'disabled style="opacity: 0.3; cursor: not-allowed;"' : ''}>⬇️</button>
               <button class="danger-btn" type="button" onclick="if(confirm('Êtes-vous sûr de vouloir supprimer ${b.name.replace(/'/g, "\\'")} ?')) removeBoss(${b.id}, '${docId}')" aria-label="Supprimer ${b.name}">🗑️</button>
               <button class="phone-view-btn" type="button" onclick="openBossView(${b.id})" aria-label="Vue mobile pour ${b.name}">📱</button>
-              <button class="shield-btn ${b.hidden ? '' : 'active'}" type="button" onclick="toggleBossHidden(${b.id})" aria-label="Cacher/Révéler ${b.name}">
+              <button class="shield-btn ${b.hidden ? '' : 'active'}" type="button" onclick="toggleBossHidden(${b.id})" aria-label="Cacher/Révéler ${b.name}" style="${b.hp === 0 ? 'background: #dc2626; border-color: #dc2626;' : ''}">
                 ${b.hidden ? '👁️ Révéler' : '🙈 Cacher'}
               </button>
             </div>
 
             <div class="edit-body">
               <div class="big-keys">
-                <button class="key neg" onclick="updateBoss(${b.id}, 'hp', 0)" type="button" aria-label="Mettre ${b.name} à 0 PV">☠️</button>
+                <button class="key neg" onclick="killBoss(${b.id})" type="button" aria-label="Mettre ${b.name} à 0 PV">☠️</button>
                 <button class="key neg" onclick="changeBossHP(${b.id}, -10)" type="button" aria-label="Retirer 10 PV à ${b.name}">-10</button>
                 <button class="key neg" onclick="changeBossHP(${b.id}, -5)" type="button" aria-label="Retirer 5 PV à ${b.name}">-5</button>
                 <button class="key neg" onclick="changeBossHP(${b.id}, -1)" type="button" aria-label="Retirer 1 PV à ${b.name}">-1</button>
