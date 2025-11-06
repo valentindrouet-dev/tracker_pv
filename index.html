@@ -946,6 +946,13 @@
           <button class="btn" onclick="addBoss()" aria-label="Ajouter un nouvel ennemi">+ Ajouter un ennemi</button>
         </div>
       </div>
+      <div class="display-card" style="margin-top: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h3 style="font-size: 0.9rem; font-weight: 700; color: #e5e7eb; margin: 0;">📜 Historique des actions</h3>
+          <button class="danger-btn" onclick="bossHistory = []; render();" style="font-size: 0.75rem; padding: 0.3rem 0.5rem;">🗑️ Effacer</button>
+        </div>
+        <div id="history-list" style="max-height: 300px; overflow-y: auto;"></div>
+      </div>
     </section>
   </div>
 
@@ -1010,6 +1017,7 @@
     let sortMode = 'none';
     let nextId = 6;
     let nextBossId = 1;
+    let bossHistory = []; // Historique des actions sur les ennemis
     const USE_FIREBASE = true;
 
     let playersCol;
@@ -1275,6 +1283,8 @@
       if (!USE_FIREBASE) {
         const boss = bosses.find(b => b.id === id);
         if (boss) {
+          const oldHP = boss.hp;
+          const oldShielded = boss.shielded;
           // Si blindage actif et dégâts négatifs → désactiver blindage au lieu de perdre HP
           if (boss.shielded && delta < 0) {
             boss.shielded = false;
@@ -1282,7 +1292,9 @@
             showToast('🛡️ Blindage absorbe !', 'warning');
             return;
           }
-          boss.hp = Math.max(0, Math.min(boss.max, boss.hp + delta));
+          const newHP = Math.max(0, Math.min(boss.max, boss.hp + delta));
+          boss.hp = newHP;
+          addToHistory(boss.id, boss.name, oldHP, newHP, oldShielded);
           render();
           flashBoss(id, delta > 0 ? 'up' : 'down');
         }
@@ -1291,6 +1303,8 @@
       bossesCol.doc(String(id)).get().then(snap => {
         const data = snap.data();
         if (!data) return;
+        const oldHP = data.hp;
+        const oldShielded = data.shielded;
         // Si blindage actif et dégâts négatifs → désactiver blindage au lieu de perdre HP
         if (data.shielded && delta < 0) {
           bossesCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
@@ -1298,6 +1312,7 @@
           return;
         }
         const newHP = Math.max(0, Math.min(data.max, data.hp + delta));
+        addToHistory(id, data.name, oldHP, newHP, oldShielded);
         bossesCol.doc(String(id)).set({ hp: newHP, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
         flashBoss(id, delta > 0 ? 'up' : 'down');
       });
@@ -1307,13 +1322,23 @@
       if (!USE_FIREBASE) {
         const boss = bosses.find(b => b.id === id);
         if (boss) {
+          const oldHP = boss.hp;
+          const oldShielded = boss.shielded;
           boss.hp = 0;
           boss.shielded = false;
+          addToHistory(boss.id, boss.name, oldHP, 0, oldShielded);
           render();
         }
         return;
       }
-      bossesCol.doc(String(id)).set({ hp: 0, shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      bossesCol.doc(String(id)).get().then(snap => {
+        const data = snap.data();
+        if (!data) return;
+        const oldHP = data.hp;
+        const oldShielded = data.shielded;
+        addToHistory(id, data.name, oldHP, 0, oldShielded);
+        bossesCol.doc(String(id)).set({ hp: 0, shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      });
     }
 
     function flashBoss(id, direction) {
@@ -1353,6 +1378,55 @@
       bossesCol.doc(String(id)).get().then(snap => {
         const current = snap.data()?.hidden || false;
         bossesCol.doc(String(id)).set({ hidden: !current, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      });
+    }
+
+    // === HISTORIQUE DES ACTIONS ===
+    function addToHistory(bossId, bossName, oldHP, newHP, oldShielded) {
+      const now = new Date();
+      const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const delta = newHP - oldHP;
+
+      const action = {
+        id: Date.now(),
+        time,
+        bossId,
+        bossName,
+        oldHP,
+        newHP,
+        oldShielded,
+        delta,
+        timestamp: now
+      };
+
+      bossHistory.unshift(action); // Ajouter au début
+      if (bossHistory.length > 50) bossHistory.pop(); // Garder max 50 entrées
+      render();
+    }
+
+    function undoBossAction(actionId) {
+      const action = bossHistory.find(a => a.id === actionId);
+      if (!action) return;
+
+      if (!USE_FIREBASE) {
+        const boss = bosses.find(b => b.id === action.bossId);
+        if (boss) {
+          boss.hp = action.oldHP;
+          boss.shielded = action.oldShielded || false;
+          bossHistory = bossHistory.filter(a => a.id !== actionId);
+          render();
+        }
+        return;
+      }
+
+      bossesCol.doc(String(action.bossId)).set({
+        hp: action.oldHP,
+        shielded: action.oldShielded || false,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true }).then(() => {
+        bossHistory = bossHistory.filter(a => a.id !== actionId);
+        render();
+        showToast('✅ Action annulée', 'success');
       });
     }
 
@@ -1903,6 +1977,31 @@
           </div>
         `;
       }).join('');
+
+      // Historique des actions
+      const historyList = document.getElementById('history-list');
+      if (historyList) {
+        if (bossHistory.length === 0) {
+          historyList.innerHTML = '<div style="text-align: center; padding: 1rem; color: #9ca3af; font-size: 0.85rem;">Aucune action enregistrée</div>';
+        } else {
+          historyList.innerHTML = bossHistory.map(action => {
+            const deltaText = action.delta > 0 ? `(+${action.delta} pv)` : `(${action.delta} pv)`;
+            const deltaColor = action.delta > 0 ? '#86efac' : '#fca5a5';
+            return `
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: rgba(30, 41, 59, 0.5); border-radius: 6px; margin-bottom: 0.4rem; border-left: 3px solid ${deltaColor};">
+                <div style="flex: 1;">
+                  <span style="color: #9ca3af; font-size: 0.75rem; font-weight: 600;">${action.time}</span>
+                  <span style="color: #e5e7eb; font-size: 0.85rem; margin-left: 0.5rem;">
+                    <strong>${action.bossName}</strong> passe de <strong>${action.oldHP}</strong> à <strong>${action.newHP}</strong> pv
+                    <span style="color: ${deltaColor}; font-weight: 600;">${deltaText}</span>
+                  </span>
+                </div>
+                <button class="btn" onclick="undoBossAction(${action.id})" style="font-size: 0.7rem; padding: 0.25rem 0.5rem; margin-left: 0.5rem;">↩️ Annuler</button>
+              </div>
+            `;
+          }).join('');
+        }
+      }
 
       saveData();
 
