@@ -910,7 +910,8 @@
       <h1 class="title">Tableau des Points de Vie</h1>
       <div class="tabs">
         <button class="tab-btn active" id="tab-display" onclick="setTab('display')" aria-label="Mode affichage">Affichage</button>
-        <button class="tab-btn" id="tab-edit" onclick="setTab('edit')" aria-label="Mode édition">Édition</button>
+        <button class="tab-btn" id="tab-edit" onclick="setTab('edit')" aria-label="Mode joueurs">Joueurs</button>
+        <button class="tab-btn" id="tab-mj" onclick="setTab('mj')" aria-label="Mode MJ">MJ</button>
       </div>
       <button class="bar-btn" onclick="toggleFullscreen()" aria-label="Activer le mode plein écran">Plein écran</button>
     </div>
@@ -938,6 +939,16 @@
         </div>
       </div>
     </section>
+
+    <section id="section-mj" class="section" style="display:none;">
+      <div class="edit-stack" id="mj-stack"></div>
+      <div style="height:.4rem;"></div>
+      <div class="display-card" style="margin-top:.2rem;">
+        <div style="display:grid; grid-template-columns: 1fr; gap:.4rem;">
+          <button class="btn" onclick="addBoss()" aria-label="Ajouter un nouvel ennemi">+ Ajouter un ennemi</button>
+        </div>
+      </div>
+    </section>
   </div>
 
   <div id="fullscreen" class="fullscreen">
@@ -957,11 +968,12 @@
 
   <script>
     function setTab(which) {
-      const isDisplay = which === 'display';
-      document.getElementById('section-display').style.display = isDisplay ? '' : 'none';
-      document.getElementById('section-edit').style.display = isDisplay ? 'none' : '';
-      document.getElementById('tab-display').classList.toggle('active', isDisplay);
-      document.getElementById('tab-edit').classList.toggle('active', !isDisplay);
+      document.getElementById('section-display').style.display = which === 'display' ? '' : 'none';
+      document.getElementById('section-edit').style.display = which === 'edit' ? '' : 'none';
+      document.getElementById('section-mj').style.display = which === 'mj' ? '' : 'none';
+      document.getElementById('tab-display').classList.toggle('active', which === 'display');
+      document.getElementById('tab-edit').classList.toggle('active', which === 'edit');
+      document.getElementById('tab-mj').classList.toggle('active', which === 'mj');
     }
 
     // Système de notifications toast
@@ -1453,37 +1465,26 @@
         `;
       }).join('');
 
-      // Boss display in fullscreen
+      // Enemies display in fullscreen - red bars without HP values
       if (bosses.length > 0) {
         content.innerHTML += `
-          <div class="boss-section">
-            <div class="boss-section-title">⚔️ Adversaires</div>
-            <div class="boss-grid">
-              ${bosses.map(b => {
-                const percent = Math.round((b.hp / b.max) * 100);
-                const circumference = 2 * Math.PI * 60;
-                const offset = circumference - (percent / 100) * circumference;
-                const imageContent = b.imageUrl
-                  ? `<img src="${b.imageUrl}" class="boss-image" alt="${b.name}" />`
-                  : `<div class="boss-image-placeholder">💀</div>`;
-                return `
-                  <div class="boss-display" data-boss-id="${b.id}">
-                    <div class="boss-circular-bar">
-                      <svg width="140" height="140">
-                        <circle class="boss-circular-bg" cx="70" cy="70" r="60" fill="none" stroke="rgba(71,85,105,0.3)" stroke-width="8" />
-                        <circle class="boss-circular-progress" cx="70" cy="70" r="60" fill="none" stroke="${b.color}" stroke-width="8" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" />
-                      </svg>
-                      <div class="boss-image-container">
-                        ${imageContent}
-                      </div>
-                      <div class="boss-hp-text">${b.hp}</div>
-                    </div>
-                    <div class="boss-name" style="color: ${b.color}">${b.name}</div>
-                    <div class="boss-percent">${percent}%</div>
+          <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid rgba(220, 38, 38, 0.3);">
+            <h2 style="font-size: 1.6rem; font-weight: 900; color: #dc2626; margin-bottom: 1.2rem; text-align: center; text-transform: uppercase; letter-spacing: 0.05em;">⚔️ Ennemis</h2>
+            ${bosses.map(b => {
+              const percent = Math.round((b.hp / b.max) * 100);
+              const bgColor = b.hp === 0 ? '#4a0000' : '#0f1419';
+              return `
+                <div class="player-display">
+                  <div class="player-header">
+                    <div class="player-name-display" style="color: #dc2626">${b.name}</div>
                   </div>
-                `;
-              }).join('')}
-            </div>
+                  <div class="hp-bar-container enemy-bar" style="background-color: ${bgColor}; border-color: rgba(220, 38, 38, 0.6);">
+                    <div class="hp-bar" data-boss-id="${b.id}" style="width: ${percent}%; background: linear-gradient(90deg, #7f1d1d, #991b1b); color: transparent;" role="progressbar" aria-valuenow="${b.hp}" aria-valuemin="0" aria-valuemax="${b.max}" aria-label="Points de vie de ${b.name}">
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
         `;
       }
@@ -1517,38 +1518,26 @@
         `;
       }).join('');
 
-      // Boss display section
+      // Enemies display section - red bars without HP values
       if (bosses.length > 0) {
         displayArea.innerHTML += `
-          <div class="boss-section">
-            <div class="boss-section-title">⚔️ Adversaires</div>
-            <div class="boss-grid">
-              ${bosses.map(b => {
-                const percent = Math.round((b.hp / b.max) * 100);
-                const barColor = getHealthColor(percent);
-                const circumference = 2 * Math.PI * 60;
-                const offset = circumference - (percent / 100) * circumference;
-                const imageContent = b.imageUrl
-                  ? `<img src="${b.imageUrl}" class="boss-image" alt="${b.name}" />`
-                  : `<div class="boss-image-placeholder">💀</div>`;
-                return `
-                  <div class="boss-display" data-boss-id="${b.id}">
-                    <div class="boss-circular-bar">
-                      <svg width="140" height="140">
-                        <circle class="boss-circular-bg" cx="70" cy="70" r="60" fill="none" stroke="rgba(71,85,105,0.3)" stroke-width="8" />
-                        <circle class="boss-circular-progress" cx="70" cy="70" r="60" fill="none" stroke="${b.color}" stroke-width="8" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round" />
-                      </svg>
-                      <div class="boss-image-container">
-                        ${imageContent}
-                      </div>
-                      <div class="boss-hp-text">${b.hp}</div>
-                    </div>
-                    <div class="boss-name" style="color: ${b.color}">${b.name}</div>
-                    <div class="boss-percent">${percent}%</div>
+          <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid rgba(220, 38, 38, 0.3);">
+            <h2 style="font-size: 1.1rem; font-weight: 800; color: #dc2626; margin-bottom: 1rem; text-align: center; text-transform: uppercase; letter-spacing: 0.05em;">⚔️ Ennemis</h2>
+            ${bosses.map(b => {
+              const percent = Math.round((b.hp / b.max) * 100);
+              const bgColor = b.hp === 0 ? '#4a0000' : '#0f1419';
+              return `
+                <div class="player-display">
+                  <div class="player-header">
+                    <div class="player-name-display" style="color: #dc2626">${b.name}</div>
                   </div>
-                `;
-              }).join('')}
-            </div>
+                  <div class="hp-bar-container enemy-bar" style="background-color: ${bgColor}; border-color: rgba(220, 38, 38, 0.6);">
+                    <div class="hp-bar" data-boss-id="${b.id}" style="width: ${percent}%; background: linear-gradient(90deg, #7f1d1d, #991b1b); color: transparent;" role="progressbar" aria-valuenow="${b.hp}" aria-valuemin="0" aria-valuemax="${b.max}" aria-label="Points de vie de ${b.name}">
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
         `;
       }
@@ -1593,47 +1582,40 @@
         `;
       }).join('');
 
-      // Boss edit section
-      edit.innerHTML += `
-        <div class="boss-edit-section">
-          <div class="boss-edit-title">⚔️ Adversaires</div>
-          <button class="add-boss-btn" onclick="addBoss()" type="button">+ Ajouter un adversaire</button>
-          ${bosses.map(b => {
-            const percent = Math.round((b.hp / b.max) * 100);
-            const docId = b._docId || String(b.id);
-            return `
-              <div class="boss-edit-card" data-boss-id="${b.id}">
-                <div class="boss-edit-header">
-                  <input class="color-pick" type="color" value="${b.color}" onchange="updateBoss(${b.id}, 'color', this.value)" aria-label="Couleur de ${b.name}">
-                  <input class="edit-name" value="${b.name}" onchange="updateBoss(${b.id}, 'name', this.value)" aria-label="Nom de l'adversaire" placeholder="Nom" style="flex: 1 1 140px;" />
-                  <div class="inline-field">
-                    <label>Max</label>
-                    <input type="number" value="${b.max}" min="1" onchange="updateBoss(${b.id}, 'max', parseInt(this.value))" aria-label="PV maximum de ${b.name}">
-                  </div>
-                  <span class="badge">${b.hp}/${b.max}</span>
-                  <input class="boss-image-input" type="text" value="${b.imageUrl || ''}" onchange="updateBoss(${b.id}, 'imageUrl', this.value)" placeholder="URL de l'image (optionnel)" aria-label="URL de l'image pour ${b.name}" />
-                </div>
-                <div class="edit-body">
-                  <div class="big-keys">
-                    <button class="key neg" onclick="updateBoss(${b.id}, 'hp', 0)" type="button" aria-label="Mettre ${b.name} à 0 PV">☠️</button>
-                    <button class="key neg" onclick="changeBossHP(${b.id}, -20)" type="button" aria-label="Retirer 20 PV à ${b.name}">-20</button>
-                    <button class="key neg" onclick="changeBossHP(${b.id}, -10)" type="button" aria-label="Retirer 10 PV à ${b.name}">-10</button>
-                    <button class="key neg" onclick="changeBossHP(${b.id}, -5)" type="button" aria-label="Retirer 5 PV à ${b.name}">-5</button>
-                    <input class="pv-center" type="number" value="${b.hp}" min="0" max="${b.max}" onchange="updateBoss(${b.id}, 'hp', parseInt(this.value)||0)" aria-label="Points de vie de ${b.name}">
-                    <button class="key pos" onclick="changeBossHP(${b.id}, 5)" type="button" aria-label="Ajouter 5 PV à ${b.name}">+5</button>
-                    <button class="key pos" onclick="changeBossHP(${b.id}, 10)" type="button" aria-label="Ajouter 10 PV à ${b.name}">+10</button>
-                    <button class="key pos" onclick="changeBossHP(${b.id}, 20)" type="button" aria-label="Ajouter 20 PV à ${b.name}">+20</button>
-                    <button class="key pos" onclick="updateBoss(${b.id}, 'hp', ${b.max})" type="button" aria-label="Restaurer ${b.name} au maximum">💚</button>
-                  </div>
-                  <div style="display:flex; justify-content:flex-end; margin-top: 0.5rem;">
-                    <button class="delete-boss-btn" type="button" onclick="removeBoss(${b.id}, '${docId}')" aria-label="Supprimer ${b.name}">🗑️ Supprimer</button>
-                  </div>
-                </div>
+      // MJ section for enemies/monsters
+      const mjStack = document.getElementById('mj-stack');
+      mjStack.innerHTML = bosses.map(b => {
+        const percent = Math.round((b.hp / b.max) * 100);
+        const docId = b._docId || String(b.id);
+        return `
+          <div class="edit-card" data-boss-id="${b.id}">
+            <div class="edit-header">
+              <input class="color-pick" type="color" value="${b.color || '#dc2626'}" onchange="updateBoss(${b.id}, 'color', this.value)" aria-label="Couleur de ${b.name}" style="visibility:hidden;">
+              <input class="edit-name" value="${b.name}" onchange="updateBoss(${b.id}, 'name', this.value)" aria-label="Nom de l'ennemi" placeholder="Nom de l'ennemi" />
+              <div class="inline-field">
+                <label>Max</label>
+                <input type="number" value="${b.max}" min="1" onchange="updateBoss(${b.id}, 'max', parseInt(this.value))" aria-label="PV maximum de ${b.name}">
               </div>
-            `;
-          }).join('')}
-        </div>
-      `;
+              <span class="badge">${b.hp}/${b.max}</span>
+              <button class="danger-btn" type="button" onclick="removeBoss(${b.id}, '${docId}')" aria-label="Supprimer ${b.name}">🗑️</button>
+            </div>
+
+            <div class="edit-body">
+              <div class="big-keys">
+                <button class="key neg" onclick="updateBoss(${b.id}, 'hp', 0)" type="button" aria-label="Mettre ${b.name} à 0 PV">☠️</button>
+                <button class="key neg" onclick="changeBossHP(${b.id}, -10)" type="button" aria-label="Retirer 10 PV à ${b.name}">-10</button>
+                <button class="key neg" onclick="changeBossHP(${b.id}, -5)" type="button" aria-label="Retirer 5 PV à ${b.name}">-5</button>
+                <button class="key neg" onclick="changeBossHP(${b.id}, -1)" type="button" aria-label="Retirer 1 PV à ${b.name}">-1</button>
+                <input class="pv-center" type="number" value="${b.hp}" min="0" max="${b.max}" onchange="updateBoss(${b.id}, 'hp', parseInt(this.value)||0)" aria-label="Points de vie de ${b.name}">
+                <button class="key pos" onclick="changeBossHP(${b.id}, 1)" type="button" aria-label="Ajouter 1 PV à ${b.name}">+1</button>
+                <button class="key pos" onclick="changeBossHP(${b.id}, 5)" type="button" aria-label="Ajouter 5 PV à ${b.name}">+5</button>
+                <button class="key pos" onclick="changeBossHP(${b.id}, 10)" type="button" aria-label="Ajouter 10 PV à ${b.name}">+10</button>
+                <button class="key pos" onclick="updateBoss(${b.id}, 'hp', ${b.max})" type="button" aria-label="Restaurer ${b.name} au maximum">💚</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
 
       saveData();
 
