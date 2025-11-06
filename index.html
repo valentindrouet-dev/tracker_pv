@@ -640,6 +640,12 @@
       else if (percent > 10) return '#7c2d12';
       else return '#450a0a';
     }
+    function getBorderColor(percent) {
+      if (percent > 50) return 'rgba(16,185,129,.4)';  // Vert émeraude
+      else if (percent > 25) return 'rgba(234,179,8,.4)';  // Jaune
+      else if (percent > 10) return 'rgba(249,115,22,.4)';  // Orange
+      else return 'rgba(220,38,38,.4)';  // Rouge
+    }
     function getSortedPlayers() {
       const sorted = [...players];
       if (sortMode === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name));
@@ -669,6 +675,7 @@
         const bgColor = p.hp === 0 ? '#4a0000' : '#0f1419';
         const barColor = getHealthColor(percent);
         const textColor = getTextColor(percent);
+        const borderColor = getBorderColor(percent);
         const displayHP = p.hp === 0 ? '' : p.hp;
         return `
           <div class="player-display">
@@ -676,7 +683,7 @@
               <div class="player-name-display" style="color: ${p.color}">${p.name}</div>
               <div class="player-percent">${percent}%</div>
             </div>
-            <div class="hp-bar-container" style="background-color: ${bgColor}">
+            <div class="hp-bar-container" style="background-color: ${bgColor}; border-color: ${borderColor};">
               <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};" role="progressbar" aria-valuenow="${p.hp}" aria-valuemin="0" aria-valuemax="${p.max}" aria-label="Points de vie de ${p.name}">
                 ${displayHP}
               </div>
@@ -694,6 +701,7 @@
         const bgColor = p.hp === 0 ? '#4a0000' : '#0f1419';
         const barColor = getHealthColor(percent);
         const textColor = getTextColor(percent);
+        const borderColor = getBorderColor(percent);
         const displayHP = p.hp === 0 ? '' : p.hp;
         return `
           <div class="player-display">
@@ -701,7 +709,7 @@
               <div class="player-name-display" style="color: ${p.color}">${p.name}</div>
               <div class="player-percent">${percent}%</div>
             </div>
-            <div class="hp-bar-container" style="background-color: ${bgColor}">
+            <div class="hp-bar-container" style="background-color: ${bgColor}; border-color: ${borderColor};">
               <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};" role="progressbar" aria-valuenow="${p.hp}" aria-valuemin="0" aria-valuemax="${p.max}" aria-label="Points de vie de ${p.name}">
                 ${displayHP}
               </div>
