@@ -371,6 +371,22 @@
   box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
 }
 
+/* Carte d'édition avec blindage actif */
+.edit-card.shielded {
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 8px 18px rgba(0,0,0,.22);
+  border-color: rgba(59, 130, 246, 0.6);
+  animation: shieldCardPulse 2s ease-in-out infinite;
+}
+
+@keyframes shieldCardPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 8px 18px rgba(0,0,0,.22);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.7), 0 8px 18px rgba(0,0,0,.22);
+  }
+}
+
 </style>
 
 <style id="ui-step4-compact-override">
@@ -670,6 +686,13 @@
       if (!USE_FIREBASE) {
         const player = players.find(p => p.id === id);
         if (player) {
+          // Si blindage actif et dégâts négatifs → désactiver blindage au lieu de perdre HP
+          if (player.shielded && delta < 0) {
+            player.shielded = false;
+            render();
+            showToast('🛡️ Blindage absorbé !', 'warning');
+            return;
+          }
           player.hp = Math.max(0, Math.min(player.max, player.hp + delta));
           render();
           flashPlayer(id, delta > 0 ? 'up' : 'down');
@@ -680,6 +703,12 @@
       const t = setTimeout(async () => {
         const snap = await playersCol.doc(String(id)).get();
         const p = snap.data(); if (!p) return;
+        // Si blindage actif et dégâts négatifs → désactiver blindage au lieu de perdre HP
+        if (p.shielded && delta < 0) {
+          await playersCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+          showToast('🛡️ Blindage absorbé !', 'warning');
+          return;
+        }
         const next = Math.max(0, Math.min(p.max, (p.hp || 0) + delta));
         playersCol.doc(String(id)).set({ hp: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       }, 110);
@@ -690,15 +719,31 @@
         const player = players.find(p => p.id === id);
         if (player) {
           const oldHP = player.hp;
-          player.hp = Math.max(0, Math.min(player.max, Number(value)||0));
+          const newHP = Math.max(0, Math.min(player.max, Number(value)||0));
+          // Si blindage actif et qu'on tente de réduire les HP → désactiver blindage
+          if (player.shielded && newHP < oldHP) {
+            player.shielded = false;
+            render();
+            showToast('🛡️ Blindage absorbé !', 'warning');
+            return;
+          }
+          player.hp = newHP;
           render();
           if (player.hp !== oldHP) flashPlayer(id, player.hp > oldHP ? 'up' : 'down');
         }
         return;
       }
-      playersCol.doc(String(id)).get().then(s => {
-        const max = Math.max(1, (s.data()?.max ?? 1));
+      playersCol.doc(String(id)).get().then(async s => {
+        const p = s.data();
+        const max = Math.max(1, (p?.max ?? 1));
+        const oldHP = p?.hp || 0;
         const clamped = Math.max(0, Math.min(max, Number(value) || 0));
+        // Si blindage actif et qu'on tente de réduire les HP → désactiver blindage
+        if (p?.shielded && clamped < oldHP) {
+          await playersCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+          showToast('🛡️ Blindage absorbé !', 'warning');
+          return;
+        }
         return playersCol.doc(String(id)).set({ hp: clamped, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       });
     }
@@ -803,8 +848,9 @@
       edit.innerHTML = players.map(p => {
         const percent = Math.round((p.hp / p.max) * 100);
         const docId = p._docId || String(p.id);
+        const shieldedClass = p.shielded ? ' shielded' : '';
         return `
-          <div class="edit-card" data-player-id="${p.id}">
+          <div class="edit-card${shieldedClass}" data-player-id="${p.id}">
             <div class="edit-header">
               <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)" aria-label="Couleur de ${p.name}">
               <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" aria-label="Nom du joueur" />
