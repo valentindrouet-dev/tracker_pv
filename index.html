@@ -1788,11 +1788,25 @@
         const percent = Math.round((p.hp / p.max) * 100);
         const docId = p._docId || String(p.id);
         const shieldedClass = p.shielded ? ' shielded' : (percent <= 10 && p.hp > 0 ? ' critical' : '');
+        const barColor = getHealthColor(percent);
+        const textColor = getTextColor(percent);
+        const borderColor = getBorderColor(percent);
+        const bgColor = p.hp === 0 ? '#4a0000' : '#0f1419';
+        const displayHP = p.hp === 0 ? '' : p.hp;
+        const shieldIcon = p.shielded ? '<span class="hp-bar-shield" style="font-size: 1.2rem;">🛡️</span>' : '';
         return `
           <div class="edit-card${shieldedClass}" data-player-id="${p.id}">
             <div class="edit-header">
               <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)" aria-label="Couleur de ${p.name}">
               <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" aria-label="Nom du joueur" />
+              <div style="flex: 1; min-width: 150px; margin: 0 0.5rem;">
+                <div class="hp-bar-container${shieldedClass}" style="background-color: ${bgColor}; border-color: ${borderColor}; height: 2rem;">
+                  ${shieldIcon}
+                  <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor}; font-size: 0.9rem; line-height: 2rem;" role="progressbar" aria-valuenow="${p.hp}" aria-valuemin="0" aria-valuemax="${p.max}" aria-label="Points de vie de ${p.name}">
+                    ${displayHP}
+                  </div>
+                </div>
+              </div>
               <button class="shield-btn ${p.shielded ? 'active' : ''}" type="button" onclick="toggleShield(${p.id})" aria-label="Activer/Désactiver le blindage de ${p.name}">
                 🛡️ Blindage
               </button>
@@ -1875,16 +1889,20 @@
             </div>
 
             <div class="edit-body">
-              <div class="big-keys">
-                <button class="key neg" onclick="updateBoss(${b.id}, 'hp', 0)" type="button" aria-label="Mettre ${b.name} à 0 PV">☠️</button>
-                <button class="key neg" onclick="changeBossHP(${b.id}, -10)" type="button" aria-label="Retirer 10 PV à ${b.name}">-10</button>
-                <button class="key neg" onclick="changeBossHP(${b.id}, -5)" type="button" aria-label="Retirer 5 PV à ${b.name}">-5</button>
-                <button class="key neg" onclick="changeBossHP(${b.id}, -1)" type="button" aria-label="Retirer 1 PV à ${b.name}">-1</button>
-                <input class="pv-center" type="number" value="${b.hp}" min="0" max="${b.max}" onchange="updateBoss(${b.id}, 'hp', parseInt(this.value)||0)" aria-label="Points de vie de ${b.name}">
-                <button class="key pos" onclick="changeBossHP(${b.id}, 1)" type="button" aria-label="Ajouter 1 PV à ${b.name}">+1</button>
-                <button class="key pos" onclick="changeBossHP(${b.id}, 5)" type="button" aria-label="Ajouter 5 PV à ${b.name}">+5</button>
-                <button class="key pos" onclick="changeBossHP(${b.id}, 10)" type="button" aria-label="Ajouter 10 PV à ${b.name}">+10</button>
-                <button class="key pos" onclick="updateBoss(${b.id}, 'hp', ${b.max})" type="button" aria-label="Restaurer ${b.name} au maximum">💚</button>
+              <div class="big-keys" style="grid-template-columns: repeat(13, 1fr); gap: 0.2rem;">
+                <button class="key neg" onclick="updateBoss(${b.id}, 'hp', 0)" type="button" aria-label="Mettre ${b.name} à 0 PV" style="padding: 0.3rem; font-size: 0.75rem;">☠️</button>
+                <button class="key neg" onclick="changeBossHP(${b.id}, -20)" type="button" aria-label="Retirer 20 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">-20</button>
+                <button class="key neg" onclick="changeBossHP(${b.id}, -10)" type="button" aria-label="Retirer 10 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">-10</button>
+                <button class="key neg" onclick="changeBossHP(${b.id}, -5)" type="button" aria-label="Retirer 5 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">-5</button>
+                <button class="key neg" onclick="changeBossHP(${b.id}, -3)" type="button" aria-label="Retirer 3 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">-3</button>
+                <button class="key neg" onclick="changeBossHP(${b.id}, -1)" type="button" aria-label="Retirer 1 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">-1</button>
+                <input class="pv-center" type="number" value="${b.hp}" min="0" max="${b.max}" onchange="updateBoss(${b.id}, 'hp', parseInt(this.value)||0)" aria-label="Points de vie de ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">
+                <button class="key pos" onclick="changeBossHP(${b.id}, 1)" type="button" aria-label="Ajouter 1 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">+1</button>
+                <button class="key pos" onclick="changeBossHP(${b.id}, 3)" type="button" aria-label="Ajouter 3 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">+3</button>
+                <button class="key pos" onclick="changeBossHP(${b.id}, 5)" type="button" aria-label="Ajouter 5 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">+5</button>
+                <button class="key pos" onclick="changeBossHP(${b.id}, 10)" type="button" aria-label="Ajouter 10 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">+10</button>
+                <button class="key pos" onclick="changeBossHP(${b.id}, 20)" type="button" aria-label="Ajouter 20 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">+20</button>
+                <button class="key pos" onclick="updateBoss(${b.id}, 'hp', ${b.max})" type="button" aria-label="Restaurer ${b.name} au maximum" style="padding: 0.3rem; font-size: 0.75rem;">💚</button>
               </div>
             </div>
           </div>
