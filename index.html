@@ -155,9 +155,17 @@
 
     .color-pick { width: 36px; height: 36px; border-radius: 9px; border: 1px solid var(--border); background: #0f1419; }
 
-    .fullscreen { position:fixed; inset:0; z-index:50; background: rgba(0,0,0,.95); padding: 3rem .6rem; display:none; }
-    .fullscreen.active { display:block; }
+    .fullscreen { position:fixed; inset:0; z-index:50; background: rgba(0,0,0,.95); padding: 4rem 2rem; display:none; overflow-y: auto; }
+    .fullscreen.active { display:flex; align-items: flex-start; justify-content: center; }
+    .fullscreen-content { max-width: 1200px; width: 100%; margin: 0 auto; }
     .fullscreen-close { position:absolute; top:.6rem; right:.6rem; }
+
+    /* Mode plein écran : barres plus grosses et textes plus lisibles */
+    .fullscreen .player-display { margin-bottom: 1.5rem; }
+    .fullscreen .player-name-display { font-size: 1.8rem; font-weight: 900; }
+    .fullscreen .player-percent { font-size: 1.3rem; }
+    .fullscreen .hp-bar-container { height: 4rem; border-radius: 1rem; border-width: 2px; }
+    .fullscreen .hp-bar { font-size: 1.5rem; font-weight: 900; }
 
     @keyframes flash-up { from { box-shadow: inset 0 0 26px rgba(34,197,94,.45);} to { box-shadow:none;} }
     @keyframes flash-down { from { box-shadow: inset 0 0 26px rgba(239,68,68,.45);} to { box-shadow:none;} }
