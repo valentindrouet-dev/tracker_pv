@@ -935,6 +935,13 @@
       <div class="display-card" style="margin-top:.2rem;">
         <button class="btn" onclick="addPlayer()" aria-label="Ajouter un nouveau joueur" style="width: 100%;">+ Ajouter</button>
       </div>
+      <div class="display-card" style="margin-top: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h3 style="font-size: 0.9rem; font-weight: 700; color: #e5e7eb; margin: 0;">📜 Historique des Dégâts</h3>
+          <button class="danger-btn" onclick="playerHistory = []; render();" style="font-size: 0.75rem; padding: 0.3rem 0.5rem;">🗑️ Effacer</button>
+        </div>
+        <div id="player-history-list" style="max-height: 300px; overflow-y: auto;"></div>
+      </div>
     </section>
 
     <section id="section-mj" class="section" style="display:none;">
@@ -948,7 +955,7 @@
       </div>
       <div class="display-card" style="margin-top: 1rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-          <h3 style="font-size: 0.9rem; font-weight: 700; color: #e5e7eb; margin: 0;">📜 Historique des actions</h3>
+          <h3 style="font-size: 0.9rem; font-weight: 700; color: #e5e7eb; margin: 0;">📜 Historique des Dégâts</h3>
           <button class="danger-btn" onclick="bossHistory = []; render();" style="font-size: 0.75rem; padding: 0.3rem 0.5rem;">🗑️ Effacer</button>
         </div>
         <div id="history-list" style="max-height: 300px; overflow-y: auto;"></div>
@@ -1018,17 +1025,21 @@
     let nextId = 6;
     let nextBossId = 1;
     let bossHistory = []; // Historique des actions sur les ennemis
+    let playerHistory = []; // Historique des actions sur les joueurs
     const USE_FIREBASE = true;
 
     let playersCol;
     let bossesCol;
+    let bossHistoryCol;
+    let playerHistoryCol;
 
     function saveData() {
       if (!USE_FIREBASE) {
         localStorage.setItem('pv-tracker-v1', JSON.stringify({ players, bosses }));
+        localStorage.setItem('pv-tracker-boss-history', JSON.stringify(bossHistory));
+        localStorage.setItem('pv-tracker-player-history', JSON.stringify(playerHistory));
       }
-      // Sauvegarder l'historique (toujours, même en mode Firebase)
-      localStorage.setItem('pv-tracker-history', JSON.stringify(bossHistory));
+      // En mode Firebase, l'historique est géré via les collections dédiées
     }
     function loadData() {
       if (!USE_FIREBASE) {
@@ -1062,13 +1073,23 @@
           nextBossId = 1;
         }
       }
-      // Charger l'historique (toujours, même en mode Firebase)
-      const savedHistory = localStorage.getItem('pv-tracker-history');
-      if (savedHistory) {
-        try {
-          bossHistory = JSON.parse(savedHistory);
-        } catch {
-          bossHistory = [];
+      // Charger les historiques en mode local
+      if (!USE_FIREBASE) {
+        const savedBossHistory = localStorage.getItem('pv-tracker-boss-history');
+        if (savedBossHistory) {
+          try {
+            bossHistory = JSON.parse(savedBossHistory);
+          } catch {
+            bossHistory = [];
+          }
+        }
+        const savedPlayerHistory = localStorage.getItem('pv-tracker-player-history');
+        if (savedPlayerHistory) {
+          try {
+            playerHistory = JSON.parse(savedPlayerHistory);
+          } catch {
+            playerHistory = [];
+          }
         }
       }
     }
@@ -1175,12 +1196,18 @@
         const player = players.find(p => p.id === id);
         if (player) {
           player.shielded = !player.shielded;
+          const type = player.shielded ? 'shield_on' : 'shield_off';
+          addToPlayerHistory(player.id, player.name, type);
           render();
         }
         return;
       }
       playersCol.doc(String(id)).get().then(snap => {
-        const current = snap.data()?.shielded || false;
+        const data = snap.data();
+        if (!data) return;
+        const current = data.shielded || false;
+        const type = !current ? 'shield_on' : 'shield_off';
+        addToPlayerHistory(id, data.name, type);
         return playersCol.doc(String(id)).set({ shielded: !current, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       });
     }
@@ -1283,11 +1310,32 @@
     function updateBoss(id, field, val) {
       if (!USE_FIREBASE) {
         const boss = bosses.find(b => b.id === id);
-        if (boss) { boss[field] = val; render(); }
+        if (boss) {
+          // Si c'est un soin total (HP = max), ajouter à l'historique
+          if (field === 'hp' && val === boss.max && boss.hp < boss.max) {
+            const oldHP = boss.hp;
+            boss.hp = val;
+            addToBossHistory(boss.id, boss.name, 'full_heal', oldHP, val);
+          } else {
+            boss[field] = val;
+          }
+          render();
+        }
         return;
       }
-      const upd = { [field]: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
-      bossesCol.doc(String(id)).set(upd, { merge: true });
+      // Mode Firebase : récupérer les données pour détecter le soin total
+      if (field === 'hp') {
+        bossesCol.doc(String(id)).get().then(snap => {
+          const data = snap.data();
+          if (data && val === data.max && data.hp < data.max) {
+            addToBossHistory(id, data.name, 'full_heal', data.hp, val);
+          }
+          bossesCol.doc(String(id)).set({ [field]: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        });
+      } else {
+        const upd = { [field]: val, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+        bossesCol.doc(String(id)).set(upd, { merge: true });
+      }
     }
 
     function changeBossHP(id, delta) {
@@ -1305,7 +1353,8 @@
           }
           const newHP = Math.max(0, Math.min(boss.max, boss.hp + delta));
           boss.hp = newHP;
-          addToHistory(boss.id, boss.name, oldHP, newHP, oldShielded);
+          const type = delta < 0 ? 'damage' : 'heal';
+          addToBossHistory(boss.id, boss.name, type, oldHP, newHP);
           render();
           flashBoss(id, delta > 0 ? 'up' : 'down');
         }
@@ -1323,7 +1372,8 @@
           return;
         }
         const newHP = Math.max(0, Math.min(data.max, data.hp + delta));
-        addToHistory(id, data.name, oldHP, newHP, oldShielded);
+        const type = delta < 0 ? 'damage' : 'heal';
+        addToBossHistory(id, data.name, type, oldHP, newHP);
         bossesCol.doc(String(id)).set({ hp: newHP, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
         flashBoss(id, delta > 0 ? 'up' : 'down');
       });
@@ -1344,7 +1394,7 @@
           }
           boss.hp = 0;
           boss.shielded = false;
-          addToHistory(boss.id, boss.name, oldHP, 0, oldShielded);
+          addToBossHistory(boss.id, boss.name, 'death', oldHP, 0);
           render();
         }
         return;
@@ -1360,7 +1410,7 @@
           showToast('🛡️ Blindage absorbe !', 'warning');
           return;
         }
-        addToHistory(id, data.name, oldHP, 0, oldShielded);
+        addToBossHistory(id, data.name, 'death', oldHP, 0);
         bossesCol.doc(String(id)).set({ hp: 0, shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       });
     }
@@ -1379,13 +1429,20 @@
       if (!USE_FIREBASE) {
         const boss = bosses.find(b => b.id === id);
         if (boss) {
+          const wasShielded = boss.shielded;
           boss.shielded = !boss.shielded;
+          const type = boss.shielded ? 'shield_on' : 'shield_off';
+          addToBossHistory(boss.id, boss.name, type);
           render();
         }
         return;
       }
       bossesCol.doc(String(id)).get().then(snap => {
-        const current = snap.data()?.shielded || false;
+        const data = snap.data();
+        if (!data) return;
+        const current = data.shielded || false;
+        const type = !current ? 'shield_on' : 'shield_off';
+        addToBossHistory(id, data.name, type);
         bossesCol.doc(String(id)).set({ shielded: !current, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       });
     }
@@ -1406,41 +1463,118 @@
     }
 
     // === HISTORIQUE DES ACTIONS ===
-    function addToHistory(bossId, bossName, oldHP, newHP, oldShielded) {
+    function addToBossHistory(bossId, bossName, type, oldHP = null, newHP = null) {
       const now = new Date();
       const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const timestamp = now.getTime();
 
-      // Vérifier si on peut regrouper avec la dernière action (même boss, moins de 5 secondes)
-      const lastAction = bossHistory[0];
-      if (lastAction && lastAction.bossId === bossId) {
-        const timeDiff = now.getTime() - new Date(lastAction.timestamp).getTime();
-        if (timeDiff < 5000) { // 5 secondes
-          // Mettre à jour l'action existante
-          lastAction.newHP = newHP;
-          lastAction.delta = newHP - lastAction.oldHP;
-          lastAction.timestamp = now;
-          lastAction.time = time;
-          render();
-          return;
+      // Regroupement uniquement pour les dégâts/soins standard (pas pour shield, death, full_heal)
+      if ((type === 'damage' || type === 'heal') && bossHistory.length > 0) {
+        const lastAction = bossHistory[0];
+        if (lastAction.bossId === bossId && (lastAction.type === 'damage' || lastAction.type === 'heal')) {
+          const timeDiff = timestamp - lastAction.timestamp;
+          if (timeDiff < 5000) { // 5 secondes
+            // Mettre à jour l'action existante
+            if (USE_FIREBASE && lastAction._docId) {
+              bossHistoryCol.doc(lastAction._docId).update({
+                newHP: newHP,
+                delta: newHP - lastAction.oldHP,
+                timestamp: timestamp,
+                time: time
+              });
+            } else {
+              lastAction.newHP = newHP;
+              lastAction.delta = newHP - lastAction.oldHP;
+              lastAction.timestamp = timestamp;
+              lastAction.time = time;
+              render();
+            }
+            return;
+          }
         }
       }
 
-      const delta = newHP - oldHP;
+      const delta = (oldHP !== null && newHP !== null) ? (newHP - oldHP) : 0;
       const action = {
-        id: Date.now(),
-        time,
-        bossId,
-        bossName,
-        oldHP,
-        newHP,
-        oldShielded,
-        delta,
-        timestamp: now
+        timestamp: timestamp,
+        time: time,
+        bossId: bossId,
+        bossName: bossName,
+        type: type, // damage, heal, shield_on, shield_off, death, full_heal
+        oldHP: oldHP,
+        newHP: newHP,
+        delta: delta
       };
 
-      bossHistory.unshift(action); // Ajouter au début
-      if (bossHistory.length > 20) bossHistory.pop(); // Garder max 20 entrées
-      render();
+      if (!USE_FIREBASE) {
+        action.id = timestamp;
+        bossHistory.unshift(action);
+        if (bossHistory.length > 20) bossHistory.pop();
+        render();
+      } else {
+        // Écrire dans Firebase
+        const docRef = bossHistoryCol.doc(String(timestamp));
+        docRef.set(action).then(() => {
+          // Firebase onSnapshot mettra à jour automatiquement
+        });
+      }
+    }
+
+    function addToPlayerHistory(playerId, playerName, type, oldHP = null, newHP = null) {
+      const now = new Date();
+      const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const timestamp = now.getTime();
+
+      // Regroupement uniquement pour les dégâts/soins standard (pas pour shield, death, full_heal)
+      if ((type === 'damage' || type === 'heal') && playerHistory.length > 0) {
+        const lastAction = playerHistory[0];
+        if (lastAction.playerId === playerId && (lastAction.type === 'damage' || lastAction.type === 'heal')) {
+          const timeDiff = timestamp - lastAction.timestamp;
+          if (timeDiff < 5000) { // 5 secondes
+            // Mettre à jour l'action existante
+            if (USE_FIREBASE && lastAction._docId) {
+              playerHistoryCol.doc(lastAction._docId).update({
+                newHP: newHP,
+                delta: newHP - lastAction.oldHP,
+                timestamp: timestamp,
+                time: time
+              });
+            } else {
+              lastAction.newHP = newHP;
+              lastAction.delta = newHP - lastAction.oldHP;
+              lastAction.timestamp = timestamp;
+              lastAction.time = time;
+              render();
+            }
+            return;
+          }
+        }
+      }
+
+      const delta = (oldHP !== null && newHP !== null) ? (newHP - oldHP) : 0;
+      const action = {
+        timestamp: timestamp,
+        time: time,
+        playerId: playerId,
+        playerName: playerName,
+        type: type, // damage, heal, shield_on, shield_off, death, full_heal
+        oldHP: oldHP,
+        newHP: newHP,
+        delta: delta
+      };
+
+      if (!USE_FIREBASE) {
+        action.id = timestamp;
+        playerHistory.unshift(action);
+        if (playerHistory.length > 20) playerHistory.pop();
+        render();
+      } else {
+        // Écrire dans Firebase
+        const docRef = playerHistoryCol.doc(String(timestamp));
+        docRef.set(action).then(() => {
+          // Firebase onSnapshot mettra à jour automatiquement
+        });
+      }
     }
 
     function undoBossAction(actionId) {
@@ -1467,6 +1601,36 @@
         render();
         showToast('✅ Action annulée', 'success');
       });
+    }
+
+    function undoPlayerAction(actionId) {
+      const action = playerHistory.find(a => (a.id || a._docId || a.timestamp) == actionId);
+      if (!action) return;
+
+      if (!USE_FIREBASE) {
+        const player = players.find(p => p.id === action.playerId);
+        if (player && action.oldHP !== null) {
+          player.hp = action.oldHP;
+          playerHistory = playerHistory.filter(a => (a.id || a._docId || a.timestamp) != actionId);
+          render();
+        }
+        return;
+      }
+
+      // Firebase: restaurer l'état si c'est un changement de HP
+      if (action.oldHP !== null) {
+        playersCol.doc(String(action.playerId)).update({
+          hp: action.oldHP,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+          // Supprimer l'entrée de l'historique
+          playerHistoryCol.doc(String(actionId)).delete();
+          showToast('✅ Action annulée', 'success');
+        });
+      } else {
+        // Pour les événements shield, juste supprimer de l'historique
+        playerHistoryCol.doc(String(actionId)).delete();
+      }
     }
 
     let currentBossViewId = null;
@@ -1570,6 +1734,7 @@
       if (!USE_FIREBASE) {
         const player = players.find(p => p.id === id);
         if (player) {
+          const oldHP = player.hp;
           // Si blindage actif et dégâts négatifs → désactiver blindage au lieu de perdre HP
           if (player.shielded && delta < 0) {
             player.shielded = false;
@@ -1577,7 +1742,10 @@
             showToast('🛡️ Blindage absorbe !', 'warning');
             return;
           }
-          player.hp = Math.max(0, Math.min(player.max, player.hp + delta));
+          const newHP = Math.max(0, Math.min(player.max, player.hp + delta));
+          player.hp = newHP;
+          const type = delta < 0 ? 'damage' : 'heal';
+          addToPlayerHistory(player.id, player.name, type, oldHP, newHP);
           render();
           flashPlayer(id, delta > 0 ? 'up' : 'down');
         }
@@ -1587,13 +1755,16 @@
       const t = setTimeout(async () => {
         const snap = await playersCol.doc(String(id)).get();
         const p = snap.data(); if (!p) return;
+        const oldHP = p.hp || 0;
         // Si blindage actif et dégâts négatifs → désactiver blindage au lieu de perdre HP
         if (p.shielded && delta < 0) {
           await playersCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
           showToast('🛡️ Blindage absorbe !', 'warning');
           return;
         }
-        const next = Math.max(0, Math.min(p.max, (p.hp || 0) + delta));
+        const next = Math.max(0, Math.min(p.max, oldHP + delta));
+        const type = delta < 0 ? 'damage' : 'heal';
+        addToPlayerHistory(id, p.name, type, oldHP, next);
         playersCol.doc(String(id)).set({ hp: next, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       }, 110);
       debounceMap.set(id, t);
@@ -1612,6 +1783,15 @@
             return;
           }
           player.hp = newHP;
+          // Déterminer le type d'événement
+          if (newHP === 0 && oldHP > 0) {
+            addToPlayerHistory(player.id, player.name, 'death', oldHP, newHP);
+          } else if (newHP === player.max && oldHP < player.max) {
+            addToPlayerHistory(player.id, player.name, 'full_heal', oldHP, newHP);
+          } else if (newHP !== oldHP) {
+            const type = newHP < oldHP ? 'damage' : 'heal';
+            addToPlayerHistory(player.id, player.name, type, oldHP, newHP);
+          }
           render();
           if (player.hp !== oldHP) flashPlayer(id, player.hp > oldHP ? 'up' : 'down');
         }
@@ -1627,6 +1807,15 @@
           await playersCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
           showToast('🛡️ Blindage absorbe !', 'warning');
           return;
+        }
+        // Déterminer le type d'événement
+        if (clamped === 0 && oldHP > 0) {
+          addToPlayerHistory(id, p.name, 'death', oldHP, clamped);
+        } else if (clamped === max && oldHP < max) {
+          addToPlayerHistory(id, p.name, 'full_heal', oldHP, clamped);
+        } else if (clamped !== oldHP) {
+          const type = clamped < oldHP ? 'damage' : 'heal';
+          addToPlayerHistory(id, p.name, type, oldHP, clamped);
         }
         return playersCol.doc(String(id)).set({ hp: clamped, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       });
@@ -2017,16 +2206,13 @@
         `;
       }).join('');
 
-      // Historique des actions
+      // Historique des dégâts (boss)
       const historyList = document.getElementById('history-list');
       if (historyList) {
         if (bossHistory.length === 0) {
           historyList.innerHTML = '<div style="text-align: center; padding: 1rem; color: #9ca3af; font-size: 0.85rem;">Aucune action enregistrée</div>';
         } else {
           historyList.innerHTML = bossHistory.map(action => {
-            const deltaText = action.delta > 0 ? `(+${action.delta} pv)` : `(${action.delta} pv)`;
-            const deltaColor = action.delta > 0 ? '#86efac' : '#fca5a5';
-
             // Trouver le boss pour obtenir sa couleur
             const boss = bosses.find(b => b.id === action.bossId);
             const enemyColor = boss?.color || '#7D7E7E';
@@ -2039,16 +2225,87 @@
               nameColor = '#a1a1a1'; // Sbire - gris
             }
 
+            // Générer le message selon le type
+            let message, borderColor;
+            if (action.type === 'death') {
+              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> est mort et passe de <strong>${action.oldHP}</strong> à <strong>0</strong> pv <span style="color: #fca5a5; font-weight: 600;">(-${action.oldHP} pv)</span>`;
+              borderColor = '#dc2626';
+            } else if (action.type === 'full_heal') {
+              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> récupère tous ses PV (<strong>${action.oldHP}</strong> → <strong>${action.newHP}</strong>)`;
+              borderColor = '#22c55e';
+            } else if (action.type === 'shield_on') {
+              message = `🛡️ <strong style="color: ${nameColor};">${action.bossName}</strong> active son blindage`;
+              borderColor = '#2563eb';
+            } else if (action.type === 'shield_off') {
+              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> perd son blindage`;
+              borderColor = '#9ca3af';
+            } else {
+              // damage ou heal
+              const deltaText = action.delta > 0 ? `(+${action.delta} pv)` : `(${action.delta} pv)`;
+              const deltaColor = action.delta > 0 ? '#86efac' : '#fca5a5';
+              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> passe de <strong>${action.oldHP}</strong> à <strong>${action.newHP}</strong> pv <span style="color: ${deltaColor}; font-weight: 600;">${deltaText}</span>`;
+              borderColor = action.delta > 0 ? '#86efac' : '#fca5a5';
+            }
+
+            const actionId = action.id || action._docId || action.timestamp;
             return `
-              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: rgba(30, 41, 59, 0.5); border-radius: 6px; margin-bottom: 0.4rem; border-left: 3px solid ${deltaColor};">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: rgba(30, 41, 59, 0.5); border-radius: 6px; margin-bottom: 0.4rem; border-left: 3px solid ${borderColor};">
                 <div style="flex: 1;">
                   <span style="color: #9ca3af; font-size: 0.75rem; font-weight: 600;">${action.time}</span>
                   <span style="color: #e5e7eb; font-size: 0.85rem; margin-left: 0.5rem;">
-                    <strong style="color: ${nameColor};">${action.bossName}</strong> passe de <strong>${action.oldHP}</strong> à <strong>${action.newHP}</strong> pv
-                    <span style="color: ${deltaColor}; font-weight: 600;">${deltaText}</span>
+                    ${message}
                   </span>
                 </div>
-                <button class="btn" onclick="undoBossAction(${action.id})" style="font-size: 0.7rem; padding: 0.25rem 0.5rem; margin-left: 0.5rem;">↩️ Annuler</button>
+                <button class="btn" onclick="undoBossAction('${actionId}')" style="font-size: 0.7rem; padding: 0.25rem 0.5rem; margin-left: 0.5rem;">↩️ Annuler</button>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // Historique des dégâts (joueurs)
+      const playerHistoryList = document.getElementById('player-history-list');
+      if (playerHistoryList) {
+        if (playerHistory.length === 0) {
+          playerHistoryList.innerHTML = '<div style="text-align: center; padding: 1rem; color: #9ca3af; font-size: 0.85rem;">Aucune action enregistrée</div>';
+        } else {
+          playerHistoryList.innerHTML = playerHistory.map(action => {
+            // Trouver le joueur pour obtenir sa couleur
+            const player = players.find(p => p.id === action.playerId);
+            const playerColor = player?.color || '#22c55e';
+
+            // Générer le message selon le type
+            let message, borderColor;
+            if (action.type === 'death') {
+              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> est mort et passe de <strong>${action.oldHP}</strong> à <strong>0</strong> pv <span style="color: #fca5a5; font-weight: 600;">(-${action.oldHP} pv)</span>`;
+              borderColor = '#dc2626';
+            } else if (action.type === 'full_heal') {
+              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> récupère tous ses PV (<strong>${action.oldHP}</strong> → <strong>${action.newHP}</strong>)`;
+              borderColor = '#22c55e';
+            } else if (action.type === 'shield_on') {
+              message = `🛡️ <strong style="color: ${playerColor};">${action.playerName}</strong> active son blindage`;
+              borderColor = '#2563eb';
+            } else if (action.type === 'shield_off') {
+              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> perd son blindage`;
+              borderColor = '#9ca3af';
+            } else {
+              // damage ou heal
+              const deltaText = action.delta > 0 ? `(+${action.delta} pv)` : `(${action.delta} pv)`;
+              const deltaColor = action.delta > 0 ? '#86efac' : '#fca5a5';
+              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> passe de <strong>${action.oldHP}</strong> à <strong>${action.newHP}</strong> pv <span style="color: ${deltaColor}; font-weight: 600;">${deltaText}</span>`;
+              borderColor = action.delta > 0 ? '#86efac' : '#fca5a5';
+            }
+
+            const actionId = action.id || action._docId || action.timestamp;
+            return `
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: rgba(30, 41, 59, 0.5); border-radius: 6px; margin-bottom: 0.4rem; border-left: 3px solid ${borderColor};">
+                <div style="flex: 1;">
+                  <span style="color: #9ca3af; font-size: 0.75rem; font-weight: 600;">${action.time}</span>
+                  <span style="color: #e5e7eb; font-size: 0.85rem; margin-left: 0.5rem;">
+                    ${message}
+                  </span>
+                </div>
+                <button class="btn" onclick="undoPlayerAction('${actionId}')" style="font-size: 0.7rem; padding: 0.25rem 0.5rem; margin-left: 0.5rem;">↩️ Annuler</button>
               </div>
             `;
           }).join('');
@@ -2114,6 +2371,8 @@
       window.db = db;
       playersCol = window.playersCol = db.collection('rooms').doc(ROOM_ID).collection('players');
       bossesCol = window.bossesCol = db.collection('rooms').doc(ROOM_ID).collection('bosses');
+      bossHistoryCol = window.bossHistoryCol = db.collection('rooms').doc(ROOM_ID).collection('bossHistory');
+      playerHistoryCol = window.playerHistoryCol = db.collection('rooms').doc(ROOM_ID).collection('playerHistory');
 
       // Mise à jour du titre avec le nom de la salle
       if (ROOM_ID !== 'AMERTUME_HP') {
@@ -2125,6 +2384,18 @@
           .map(d => ({ ...d.data(), _docId: d.id }))
           .filter(p => !p.__deleted);
         nextId = players.length ? Math.max(...players.map(p => p.id)) + 1 : 1;
+        render();
+      });
+
+      // Écouter l'historique des boss
+      bossHistoryCol.orderBy('timestamp', 'desc').limit(20).onSnapshot((snap) => {
+        bossHistory = snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
+        render();
+      });
+
+      // Écouter l'historique des joueurs
+      playerHistoryCol.orderBy('timestamp', 'desc').limit(20).onSnapshot((snap) => {
+        playerHistory = snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
         render();
       });
 
