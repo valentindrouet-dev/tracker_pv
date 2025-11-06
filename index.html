@@ -1639,7 +1639,7 @@
         const textColor = getTextColor(percent);
         const borderColor = getBorderColor(percent);
         const displayHP = p.hp === 0 ? '' : p.hp;
-        const shieldIcon = p.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; box-shadow: 0 0 10px rgba(37,99,235,.5); z-index: 10;">Blindage</span>' : '';
+        const shieldIcon = p.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.5rem 1rem; border-radius: 9999px; font-size: 1.2rem; font-weight: 700; box-shadow: 0 0 14px rgba(37,99,235,.6); z-index: 10;">Blindage</span>' : '';
         const shieldedClass = p.shielded ? ' shielded' : '';
         return `
           <div class="player-display">
@@ -1686,7 +1686,7 @@
               }
 
               const bgColor = b.hp === 0 ? '#4a0000' : '#0f1419';
-              const shieldIcon = b.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; box-shadow: 0 0 10px rgba(37,99,235,.5); z-index: 10;">Blindage</span>' : '';
+              const shieldIcon = b.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.5rem 1rem; border-radius: 9999px; font-size: 1.2rem; font-weight: 700; box-shadow: 0 0 14px rgba(37,99,235,.6); z-index: 10;">Blindage</span>' : '';
               const shieldedClass = b.shielded ? ' shielded' : '';
               return `
                 <div class="player-display">
@@ -1875,20 +1875,20 @@
             </div>
 
             <div class="edit-body">
-              <div class="big-keys" style="grid-template-columns: repeat(13, 1fr); gap: 0.2rem;">
-                <button class="key neg" onclick="updateBoss(${b.id}, 'hp', 0)" type="button" aria-label="Mettre ${b.name} à 0 PV" style="padding: 0.3rem; font-size: 0.75rem;">☠️</button>
-                <button class="key neg" onclick="changeBossHP(${b.id}, -20)" type="button" aria-label="Retirer 20 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">-20</button>
-                <button class="key neg" onclick="changeBossHP(${b.id}, -10)" type="button" aria-label="Retirer 10 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">-10</button>
-                <button class="key neg" onclick="changeBossHP(${b.id}, -5)" type="button" aria-label="Retirer 5 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">-5</button>
-                <button class="key neg" onclick="changeBossHP(${b.id}, -3)" type="button" aria-label="Retirer 3 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">-3</button>
-                <button class="key neg" onclick="changeBossHP(${b.id}, -1)" type="button" aria-label="Retirer 1 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">-1</button>
-                <input class="pv-center" type="number" value="${b.hp}" min="0" max="${b.max}" onchange="updateBoss(${b.id}, 'hp', parseInt(this.value)||0)" aria-label="Points de vie de ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">
-                <button class="key pos" onclick="changeBossHP(${b.id}, 1)" type="button" aria-label="Ajouter 1 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">+1</button>
-                <button class="key pos" onclick="changeBossHP(${b.id}, 3)" type="button" aria-label="Ajouter 3 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">+3</button>
-                <button class="key pos" onclick="changeBossHP(${b.id}, 5)" type="button" aria-label="Ajouter 5 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">+5</button>
-                <button class="key pos" onclick="changeBossHP(${b.id}, 10)" type="button" aria-label="Ajouter 10 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">+10</button>
-                <button class="key pos" onclick="changeBossHP(${b.id}, 20)" type="button" aria-label="Ajouter 20 PV à ${b.name}" style="padding: 0.3rem; font-size: 0.75rem;">+20</button>
-                <button class="key pos" onclick="updateBoss(${b.id}, 'hp', ${b.max})" type="button" aria-label="Restaurer ${b.name} au maximum" style="padding: 0.3rem; font-size: 0.75rem;">💚</button>
+              <div class="big-keys" style="grid-template-columns: repeat(13, 1fr); gap: 0.1rem;">
+                <button class="key neg" onclick="updateBoss(${b.id}, 'hp', 0)" type="button" aria-label="Mettre ${b.name} à 0 PV" style="padding: 0.2rem; font-size: 0.65rem;">☠️</button>
+                <button class="key neg" onclick="changeBossHP(${b.id}, -20)" type="button" aria-label="Retirer 20 PV à ${b.name}" style="padding: 0.2rem; font-size: 0.65rem;">-20</button>
+                <button class="key neg" onclick="changeBossHP(${b.id}, -10)" type="button" aria-label="Retirer 10 PV à ${b.name}" style="padding: 0.2rem; font-size: 0.65rem;">-10</button>
+                <button class="key neg" onclick="changeBossHP(${b.id}, -5)" type="button" aria-label="Retirer 5 PV à ${b.name}" style="padding: 0.2rem; font-size: 0.65rem;">-5</button>
+                <button class="key neg" onclick="changeBossHP(${b.id}, -3)" type="button" aria-label="Retirer 3 PV à ${b.name}" style="padding: 0.2rem; font-size: 0.65rem;">-3</button>
+                <button class="key neg" onclick="changeBossHP(${b.id}, -1)" type="button" aria-label="Retirer 1 PV à ${b.name}" style="padding: 0.2rem; font-size: 0.65rem;">-1</button>
+                <input class="pv-center" type="number" value="${b.hp}" min="0" max="${b.max}" onchange="updateBoss(${b.id}, 'hp', parseInt(this.value)||0)" aria-label="Points de vie de ${b.name}" style="padding: 0.2rem; font-size: 0.65rem;">
+                <button class="key pos" onclick="changeBossHP(${b.id}, 1)" type="button" aria-label="Ajouter 1 PV à ${b.name}" style="padding: 0.2rem; font-size: 0.65rem;">+1</button>
+                <button class="key pos" onclick="changeBossHP(${b.id}, 3)" type="button" aria-label="Ajouter 3 PV à ${b.name}" style="padding: 0.2rem; font-size: 0.65rem;">+3</button>
+                <button class="key pos" onclick="changeBossHP(${b.id}, 5)" type="button" aria-label="Ajouter 5 PV à ${b.name}" style="padding: 0.2rem; font-size: 0.65rem;">+5</button>
+                <button class="key pos" onclick="changeBossHP(${b.id}, 10)" type="button" aria-label="Ajouter 10 PV à ${b.name}" style="padding: 0.2rem; font-size: 0.65rem;">+10</button>
+                <button class="key pos" onclick="changeBossHP(${b.id}, 20)" type="button" aria-label="Ajouter 20 PV à ${b.name}" style="padding: 0.2rem; font-size: 0.65rem;">+20</button>
+                <button class="key pos" onclick="updateBoss(${b.id}, 'hp', ${b.max})" type="button" aria-label="Restaurer ${b.name} au maximum" style="padding: 0.2rem; font-size: 0.65rem;">💚</button>
               </div>
             </div>
           </div>
