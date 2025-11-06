@@ -920,12 +920,15 @@
   <div class="app">
     <section id="section-display" class="section">
       <div class="display-card">
-        <div id="display-area"></div>
+        <div id="display-area-players"></div>
         <div class="sort-buttons">
           <button onclick="sortPlayers('name')" id="sort-name" class="btn-sort" aria-label="Trier par noms">Noms</button>
           <button onclick="sortPlayers('hpdesc')" id="sort-hpdesc" class="btn-sort" aria-label="Trier par PV décroissants">PV Max</button>
           <button onclick="sortPlayers('hpasc')" id="sort-hpasc" class="btn-sort" aria-label="Trier par PV croissants">PV Min</button>
         </div>
+      </div>
+      <div class="display-card" style="margin-top: 1rem;">
+        <div id="display-area-bosses"></div>
       </div>
     </section>
 
@@ -1034,10 +1037,10 @@
     function saveData() {
       if (!USE_FIREBASE) {
         localStorage.setItem('pv-tracker-v1', JSON.stringify({ players, bosses }));
-        localStorage.setItem('pv-tracker-boss-history', JSON.stringify(bossHistory));
-        localStorage.setItem('pv-tracker-player-history', JSON.stringify(playerHistory));
       }
-      // En mode Firebase, l'historique est géré via les collections dédiées
+      // L'historique est toujours sauvegardé en localStorage, même en mode Firebase
+      localStorage.setItem('pv-tracker-boss-history', JSON.stringify(bossHistory));
+      localStorage.setItem('pv-tracker-player-history', JSON.stringify(playerHistory));
     }
     function loadData() {
       if (!USE_FIREBASE) {
@@ -1071,23 +1074,21 @@
           nextBossId = 1;
         }
       }
-      // Charger les historiques en mode local
-      if (!USE_FIREBASE) {
-        const savedBossHistory = localStorage.getItem('pv-tracker-boss-history');
-        if (savedBossHistory) {
-          try {
-            bossHistory = JSON.parse(savedBossHistory);
-          } catch {
-            bossHistory = [];
-          }
+      // Charger les historiques depuis localStorage (toujours, même en mode Firebase)
+      const savedBossHistory = localStorage.getItem('pv-tracker-boss-history');
+      if (savedBossHistory) {
+        try {
+          bossHistory = JSON.parse(savedBossHistory);
+        } catch {
+          bossHistory = [];
         }
-        const savedPlayerHistory = localStorage.getItem('pv-tracker-player-history');
-        if (savedPlayerHistory) {
-          try {
-            playerHistory = JSON.parse(savedPlayerHistory);
-          } catch {
-            playerHistory = [];
-          }
+      }
+      const savedPlayerHistory = localStorage.getItem('pv-tracker-player-history');
+      if (savedPlayerHistory) {
+        try {
+          playerHistory = JSON.parse(savedPlayerHistory);
+        } catch {
+          playerHistory = [];
         }
       }
     }
@@ -1466,6 +1467,25 @@
       const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
       const timestamp = now.getTime();
 
+      // Annulation des blindages opposés dans les 5 secondes
+      if ((type === 'shield_on' || type === 'shield_off') && bossHistory.length > 0) {
+        const oppositeType = type === 'shield_on' ? 'shield_off' : 'shield_on';
+        const recentOppositeIndex = bossHistory.findIndex(action => {
+          if (action.bossId !== bossId) return false;
+          if (action.type !== oppositeType) return false;
+          const timeDiff = timestamp - action.timestamp;
+          return timeDiff < 5000; // 5 secondes
+        });
+
+        if (recentOppositeIndex !== -1) {
+          // Supprimer l'action opposée et ne pas ajouter la nouvelle
+          bossHistory.splice(recentOppositeIndex, 1);
+          saveData();
+          render();
+          return;
+        }
+      }
+
       // Regroupement uniquement pour les dégâts/soins standard (pas pour shield, death, full_heal)
       if ((type === 'damage' || type === 'heal') && bossHistory.length > 0) {
         const lastAction = bossHistory[0];
@@ -1507,6 +1527,25 @@
       const now = new Date();
       const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
       const timestamp = now.getTime();
+
+      // Annulation des blindages opposés dans les 5 secondes
+      if ((type === 'shield_on' || type === 'shield_off') && playerHistory.length > 0) {
+        const oppositeType = type === 'shield_on' ? 'shield_off' : 'shield_on';
+        const recentOppositeIndex = playerHistory.findIndex(action => {
+          if (action.playerId !== playerId) return false;
+          if (action.type !== oppositeType) return false;
+          const timeDiff = timestamp - action.timestamp;
+          return timeDiff < 5000; // 5 secondes
+        });
+
+        if (recentOppositeIndex !== -1) {
+          // Supprimer l'action opposée et ne pas ajouter la nouvelle
+          playerHistory.splice(recentOppositeIndex, 1);
+          saveData();
+          render();
+          return;
+        }
+      }
 
       // Regroupement uniquement pour les dégâts/soins standard (pas pour shield, death, full_heal)
       if ((type === 'damage' || type === 'heal') && playerHistory.length > 0) {
@@ -1987,8 +2026,8 @@
 
     function render() {
       const sorted = getSortedPlayers();
-      const displayArea = document.getElementById('display-area');
-      displayArea.innerHTML = sorted.map(p => {
+      const displayAreaPlayers = document.getElementById('display-area-players');
+      displayAreaPlayers.innerHTML = sorted.map(p => {
         const percent = Math.round((p.hp / p.max) * 100);
         const bgColor = p.hp === 0 ? '#4a0000' : '#0f1419';
         const barColor = getHealthColor(percent);
@@ -2014,51 +2053,50 @@
       }).join('');
 
       // Enemies display section - colored bars without HP values (only show non-hidden enemies)
+      const displayAreaBosses = document.getElementById('display-area-bosses');
       const visibleBosses = bosses.filter(b => !b.hidden);
       if (visibleBosses.length > 0) {
-        displayArea.innerHTML += `
-          <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid rgba(220, 38, 38, 0.3);">
-            ${visibleBosses.map(b => {
-              const percent = Math.round((b.hp / b.max) * 100);
-              const enemyColor = b.color || '#7D7E7E'; // Default to Sbire
+        displayAreaBosses.innerHTML = visibleBosses.map(b => {
+          const percent = Math.round((b.hp / b.max) * 100);
+          const enemyColor = b.color || '#7D7E7E'; // Default to Sbire
 
-              // Create gradient based on enemy type
-              let gradient, borderColor, nameColor;
-              if (enemyColor.toUpperCase() === '#846BAF') {
-                // Unique - violet
-                gradient = 'linear-gradient(90deg, #5a4a7d, #846BAF)';
-                borderColor = 'rgba(132, 107, 175, 0.6)';
-                nameColor = '#846BAF';
-              } else if (enemyColor.toUpperCase() === '#BF5750') {
-                // Solitaire - rouge
-                gradient = 'linear-gradient(90deg, #7f1d1d, #BF5750)';
-                borderColor = 'rgba(191, 87, 80, 0.6)';
-                nameColor = '#BF5750';
-              } else {
-                // Sbire - gris
-                gradient = 'linear-gradient(90deg, #4a4a4a, #7D7E7E)';
-                borderColor = 'rgba(125, 126, 126, 0.6)';
-                nameColor = '#7D7E7E';
-              }
+          // Create gradient based on enemy type
+          let gradient, borderColor, nameColor;
+          if (enemyColor.toUpperCase() === '#846BAF') {
+            // Unique - violet
+            gradient = 'linear-gradient(90deg, #5a4a7d, #846BAF)';
+            borderColor = 'rgba(132, 107, 175, 0.6)';
+            nameColor = '#846BAF';
+          } else if (enemyColor.toUpperCase() === '#BF5750') {
+            // Solitaire - rouge
+            gradient = 'linear-gradient(90deg, #7f1d1d, #BF5750)';
+            borderColor = 'rgba(191, 87, 80, 0.6)';
+            nameColor = '#BF5750';
+          } else {
+            // Sbire - gris
+            gradient = 'linear-gradient(90deg, #4a4a4a, #7D7E7E)';
+            borderColor = 'rgba(125, 126, 126, 0.6)';
+            nameColor = '#7D7E7E';
+          }
 
-              const bgColor = b.hp === 0 ? '#4a0000' : '#0f1419';
-              const shieldIcon = b.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; box-shadow: 0 0 10px rgba(37,99,235,.5); z-index: 10;">Blindage</span>' : '';
-              const shieldedClass = b.shielded ? ' shielded' : '';
-              return `
-                <div class="player-display">
-                  <div class="player-header">
-                    <div class="player-name-display" style="color: ${nameColor}">${b.name}</div>
-                  </div>
-                  <div class="hp-bar-container enemy-bar${shieldedClass}" style="background-color: ${bgColor}; border-color: ${borderColor};">
-                    ${shieldIcon}
-                    <div class="hp-bar" data-boss-id="${b.id}" style="width: ${percent}%; background: ${gradient}; color: transparent;" role="progressbar" aria-valuenow="${b.hp}" aria-valuemin="0" aria-valuemax="${b.max}" aria-label="Points de vie de ${b.name}">
-                    </div>
-                  </div>
+          const bgColor = b.hp === 0 ? '#4a0000' : '#0f1419';
+          const shieldIcon = b.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; box-shadow: 0 0 10px rgba(37,99,235,.5); z-index: 10;">Blindage</span>' : '';
+          const shieldedClass = b.shielded ? ' shielded' : '';
+          return `
+            <div class="player-display">
+              <div class="player-header">
+                <div class="player-name-display" style="color: ${nameColor}">${b.name}</div>
+              </div>
+              <div class="hp-bar-container enemy-bar${shieldedClass}" style="background-color: ${bgColor}; border-color: ${borderColor};">
+                ${shieldIcon}
+                <div class="hp-bar" data-boss-id="${b.id}" style="width: ${percent}%; background: ${gradient}; color: transparent;" role="progressbar" aria-valuenow="${b.hp}" aria-valuemin="0" aria-valuemax="${b.max}" aria-label="Points de vie de ${b.name}">
                 </div>
-              `;
-            }).join('')}
-          </div>
-        `;
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        displayAreaBosses.innerHTML = '';
       }
 
       // EDIT: compact header with inline PV/Max
@@ -2244,7 +2282,8 @@
               message = `<strong style="color: ${playerColor};">${action.playerName}</strong> est mort et passe de <strong>${action.oldHP}</strong> à <strong>0</strong> pv <span style="color: #fca5a5; font-weight: 600;">(-${action.oldHP} pv)</span>`;
               borderColor = '#dc2626';
             } else if (action.type === 'full_heal') {
-              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> récupère tous ses PV (<strong>${action.oldHP}</strong> → <strong>${action.newHP}</strong>)`;
+              const healAmount = action.newHP - action.oldHP;
+              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> récupère tous ses PV et passe de <strong>${action.oldHP}</strong> à <strong>${action.newHP}</strong> pv <span style="color: #86efac; font-weight: 600;">(+${healAmount} pv)</span>`;
               borderColor = '#22c55e';
             } else if (action.type === 'shield_on') {
               message = `🛡️ <strong style="color: ${playerColor};">${action.playerName}</strong> active son blindage`;
