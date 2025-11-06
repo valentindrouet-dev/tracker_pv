@@ -1324,6 +1324,13 @@
         if (boss) {
           const oldHP = boss.hp;
           const oldShielded = boss.shielded;
+          // Si blindage actif → désactiver blindage au lieu de tuer
+          if (boss.shielded) {
+            boss.shielded = false;
+            render();
+            showToast('🛡️ Blindage absorbe !', 'warning');
+            return;
+          }
           boss.hp = 0;
           boss.shielded = false;
           addToHistory(boss.id, boss.name, oldHP, 0, oldShielded);
@@ -1336,6 +1343,12 @@
         if (!data) return;
         const oldHP = data.hp;
         const oldShielded = data.shielded;
+        // Si blindage actif → désactiver blindage au lieu de tuer
+        if (data.shielded) {
+          bossesCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+          showToast('🛡️ Blindage absorbe !', 'warning');
+          return;
+        }
         addToHistory(id, data.name, oldHP, 0, oldShielded);
         bossesCol.doc(String(id)).set({ hp: 0, shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
       });
