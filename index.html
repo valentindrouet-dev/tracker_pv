@@ -338,18 +338,22 @@
   50% { opacity: 0.7; }
 }
 
-/* Badge shield à côté du nom */
-.shield-badge {
-  display: inline-block;
-  margin-left: 0.4rem;
-  font-size: 1rem;
-  filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.6));
-  animation: shieldBadgePulse 2s ease-in-out infinite;
+/* Gros bouclier centré dans la barre HP */
+.hp-bar-shield {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  z-index: 10;
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.9));
+  animation: shieldBigPulse 2s ease-in-out infinite;
+  pointer-events: none;
 }
 
-@keyframes shieldBadgePulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+@keyframes shieldBigPulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.9)); }
+  50% { transform: translate(-50%, -50%) scale(1.15); filter: drop-shadow(0 0 12px rgba(59, 130, 246, 1)); }
 }
 
 /* Bouton blindage compact pour header */
@@ -371,7 +375,23 @@
   box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
 }
 
-/* Carte d'édition avec blindage actif */
+/* Carte d'édition en danger critique (HP rouges < 10%) */
+.edit-card.critical {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 8px 18px rgba(0,0,0,.22);
+  border-color: rgba(239, 68, 68, 0.6);
+  animation: criticalCardPulse 2s ease-in-out infinite;
+}
+
+@keyframes criticalCardPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.5), 0 8px 18px rgba(0,0,0,.22);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.7), 0 8px 18px rgba(0,0,0,.22);
+  }
+}
+
+/* Carte d'édition avec blindage actif (priorité sur critical) */
 .edit-card.shielded {
   box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 8px 18px rgba(0,0,0,.22);
   border-color: rgba(59, 130, 246, 0.6);
@@ -798,15 +818,16 @@
         const textColor = getTextColor(percent);
         const borderColor = getBorderColor(percent);
         const displayHP = p.hp === 0 ? '' : p.hp;
-        const shieldBadge = p.shielded ? '<span class="shield-badge">🛡️</span>' : '';
+        const shieldIcon = p.shielded ? '<span class="hp-bar-shield">🛡️</span>' : '';
         const shieldedClass = p.shielded ? ' shielded' : '';
         return `
           <div class="player-display">
             <div class="player-header">
-              <div class="player-name-display" style="color: ${p.color}">${p.name}${shieldBadge}</div>
+              <div class="player-name-display" style="color: ${p.color}">${p.name}</div>
               <div class="player-percent">${percent}%</div>
             </div>
             <div class="hp-bar-container${shieldedClass}" style="background-color: ${bgColor}; border-color: ${borderColor};">
+              ${shieldIcon}
               <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};" role="progressbar" aria-valuenow="${p.hp}" aria-valuemin="0" aria-valuemax="${p.max}" aria-label="Points de vie de ${p.name}">
                 ${displayHP}
               </div>
@@ -826,15 +847,16 @@
         const textColor = getTextColor(percent);
         const borderColor = getBorderColor(percent);
         const displayHP = p.hp === 0 ? '' : p.hp;
-        const shieldBadge = p.shielded ? '<span class="shield-badge">🛡️</span>' : '';
+        const shieldIcon = p.shielded ? '<span class="hp-bar-shield">🛡️</span>' : '';
         const shieldedClass = p.shielded ? ' shielded' : '';
         return `
           <div class="player-display">
             <div class="player-header">
-              <div class="player-name-display" style="color: ${p.color}">${p.name}${shieldBadge}</div>
+              <div class="player-name-display" style="color: ${p.color}">${p.name}</div>
               <div class="player-percent">${percent}%</div>
             </div>
             <div class="hp-bar-container${shieldedClass}" style="background-color: ${bgColor}; border-color: ${borderColor};">
+              ${shieldIcon}
               <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};" role="progressbar" aria-valuenow="${p.hp}" aria-valuemin="0" aria-valuemax="${p.max}" aria-label="Points de vie de ${p.name}">
                 ${displayHP}
               </div>
@@ -848,7 +870,7 @@
       edit.innerHTML = players.map(p => {
         const percent = Math.round((p.hp / p.max) * 100);
         const docId = p._docId || String(p.id);
-        const shieldedClass = p.shielded ? ' shielded' : '';
+        const shieldedClass = p.shielded ? ' shielded' : (percent <= 10 && p.hp > 0 ? ' critical' : '');
         return `
           <div class="edit-card${shieldedClass}" data-player-id="${p.id}">
             <div class="edit-header">
