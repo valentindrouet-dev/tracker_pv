@@ -1027,6 +1027,8 @@
       if (!USE_FIREBASE) {
         localStorage.setItem('pv-tracker-v1', JSON.stringify({ players, bosses }));
       }
+      // Sauvegarder l'historique (toujours, même en mode Firebase)
+      localStorage.setItem('pv-tracker-history', JSON.stringify(bossHistory));
     }
     function loadData() {
       if (!USE_FIREBASE) {
@@ -1058,6 +1060,15 @@
           bosses = JSON.parse(JSON.stringify(defaultBosses));
           nextId = 6;
           nextBossId = 1;
+        }
+      }
+      // Charger l'historique (toujours, même en mode Firebase)
+      const savedHistory = localStorage.getItem('pv-tracker-history');
+      if (savedHistory) {
+        try {
+          bossHistory = JSON.parse(savedHistory);
+        } catch {
+          bossHistory = [];
         }
       }
     }
@@ -1398,8 +1409,23 @@
     function addToHistory(bossId, bossName, oldHP, newHP, oldShielded) {
       const now = new Date();
       const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      const delta = newHP - oldHP;
 
+      // Vérifier si on peut regrouper avec la dernière action (même boss, moins de 5 secondes)
+      const lastAction = bossHistory[0];
+      if (lastAction && lastAction.bossId === bossId) {
+        const timeDiff = now.getTime() - new Date(lastAction.timestamp).getTime();
+        if (timeDiff < 5000) { // 5 secondes
+          // Mettre à jour l'action existante
+          lastAction.newHP = newHP;
+          lastAction.delta = newHP - lastAction.oldHP;
+          lastAction.timestamp = now;
+          lastAction.time = time;
+          render();
+          return;
+        }
+      }
+
+      const delta = newHP - oldHP;
       const action = {
         id: Date.now(),
         time,
@@ -1413,7 +1439,7 @@
       };
 
       bossHistory.unshift(action); // Ajouter au début
-      if (bossHistory.length > 50) bossHistory.pop(); // Garder max 50 entrées
+      if (bossHistory.length > 20) bossHistory.pop(); // Garder max 20 entrées
       render();
     }
 
@@ -2000,12 +2026,25 @@
           historyList.innerHTML = bossHistory.map(action => {
             const deltaText = action.delta > 0 ? `(+${action.delta} pv)` : `(${action.delta} pv)`;
             const deltaColor = action.delta > 0 ? '#86efac' : '#fca5a5';
+
+            // Trouver le boss pour obtenir sa couleur
+            const boss = bosses.find(b => b.id === action.bossId);
+            const enemyColor = boss?.color || '#7D7E7E';
+            let nameColor;
+            if (enemyColor.toUpperCase() === '#846BAF') {
+              nameColor = '#b39ddb'; // Unique - violet
+            } else if (enemyColor.toUpperCase() === '#BF5750') {
+              nameColor = '#e57373'; // Solitaire - rouge
+            } else {
+              nameColor = '#a1a1a1'; // Sbire - gris
+            }
+
             return `
               <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem; background: rgba(30, 41, 59, 0.5); border-radius: 6px; margin-bottom: 0.4rem; border-left: 3px solid ${deltaColor};">
                 <div style="flex: 1;">
                   <span style="color: #9ca3af; font-size: 0.75rem; font-weight: 600;">${action.time}</span>
                   <span style="color: #e5e7eb; font-size: 0.85rem; margin-left: 0.5rem;">
-                    <strong>${action.bossName}</strong> passe de <strong>${action.oldHP}</strong> à <strong>${action.newHP}</strong> pv
+                    <strong style="color: ${nameColor};">${action.bossName}</strong> passe de <strong>${action.oldHP}</strong> à <strong>${action.newHP}</strong> pv
                     <span style="color: ${deltaColor}; font-weight: 600;">${deltaText}</span>
                   </span>
                 </div>
