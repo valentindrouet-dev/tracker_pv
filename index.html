@@ -318,14 +318,14 @@
   width: 0 !important;                        /* truly empty bar */
 }
 
-/* État BLINDAGE : filtre bleu cyan semi-transparent */
+/* État BLINDAGE : filtre bleu cyan plus opaque */
 .hp-bar-container.shielded::before{
   content: "";
   position: absolute;
   inset: 0;
   background: linear-gradient(90deg,
-    rgba(59, 130, 246, 0.35),
-    rgba(96, 165, 250, 0.25)
+    rgba(59, 130, 246, 0.6),
+    rgba(96, 165, 250, 0.5)
   );
   border-radius: inherit;
   pointer-events: none;
@@ -350,6 +350,25 @@
 @keyframes shieldBadgePulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.1); }
+}
+
+/* Bouton blindage compact pour header */
+.shield-btn {
+  padding: .3rem .5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #121828;
+  color: #e5e7eb;
+  font-size: .8rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.shield-btn.active {
+  background: #2563eb;
+  color: white;
+  border-color: #3b82f6;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.4);
 }
 
 </style>
@@ -788,7 +807,11 @@
           <div class="edit-card" data-player-id="${p.id}">
             <div class="edit-header">
               <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)" aria-label="Couleur de ${p.name}">
-              <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" aria-label="Nom du joueur" /><div class="inline-field">
+              <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" aria-label="Nom du joueur" />
+              <button class="shield-btn ${p.shielded ? 'active' : ''}" type="button" onclick="toggleShield(${p.id})" aria-label="Activer/Désactiver le blindage de ${p.name}">
+                🛡️ Blindage
+              </button>
+              <div class="inline-field">
                 <label>Max</label>
                 <input type="number" value="${p.max}" min="1" onchange="updatePlayer(${p.id}, 'max', parseInt(this.value))" aria-label="PV maximum de ${p.name}">
               </div>
@@ -808,10 +831,7 @@
   <button class="key pos" onclick="setHP(${p.id}, ${p.max})" type="button" aria-label="Restaurer ${p.name} au maximum (${p.max} PV)">💚</button>
 </div>
 
-              <div style="display:flex; justify-content:space-between; gap:.5rem;">
-  <button class="btn ${p.shielded ? 'pos' : ''}" type="button" onclick="toggleShield(${p.id})" aria-label="${p.shielded ? 'Désactiver' : 'Activer'} le blindage de ${p.name}">
-    ${p.shielded ? '🛡️ Blindage actif' : '🛡️ Activer blindage'}
-  </button>
+              <div style="display:flex; justify-content:flex-end;">
   <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')" aria-label="Supprimer ${p.name}">🗑️ Supprimer</button>
 </div>
             </div>
