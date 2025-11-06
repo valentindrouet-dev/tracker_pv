@@ -1578,29 +1578,33 @@
     }
 
     function undoBossAction(actionId) {
-      const action = bossHistory.find(a => a.id === actionId);
+      const action = bossHistory.find(a => (a.id || a._docId || a.timestamp) == actionId);
       if (!action) return;
 
       if (!USE_FIREBASE) {
         const boss = bosses.find(b => b.id === action.bossId);
-        if (boss) {
+        if (boss && action.oldHP !== null) {
           boss.hp = action.oldHP;
-          boss.shielded = action.oldShielded || false;
-          bossHistory = bossHistory.filter(a => a.id !== actionId);
+          bossHistory = bossHistory.filter(a => (a.id || a._docId || a.timestamp) != actionId);
           render();
         }
         return;
       }
 
-      bossesCol.doc(String(action.bossId)).set({
-        hp: action.oldHP,
-        shielded: action.oldShielded || false,
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-      }, { merge: true }).then(() => {
-        bossHistory = bossHistory.filter(a => a.id !== actionId);
-        render();
-        showToast('✅ Action annulée', 'success');
-      });
+      // Firebase: restaurer l'état si c'est un changement de HP
+      if (action.oldHP !== null) {
+        bossesCol.doc(String(action.bossId)).update({
+          hp: action.oldHP,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+          // Supprimer l'entrée de l'historique
+          bossHistoryCol.doc(String(actionId)).delete();
+          showToast('✅ Action annulée', 'success');
+        });
+      } else {
+        // Pour les événements shield, juste supprimer de l'historique
+        bossHistoryCol.doc(String(actionId)).delete();
+      }
     }
 
     function undoPlayerAction(actionId) {
