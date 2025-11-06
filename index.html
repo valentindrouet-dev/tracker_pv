@@ -690,7 +690,7 @@
           if (player.shielded && delta < 0) {
             player.shielded = false;
             render();
-            showToast('🛡️ Blindage absorbé !', 'warning');
+            showToast('🛡️ Blindage absorbe !', 'warning');
             return;
           }
           player.hp = Math.max(0, Math.min(player.max, player.hp + delta));
@@ -706,7 +706,7 @@
         // Si blindage actif et dégâts négatifs → désactiver blindage au lieu de perdre HP
         if (p.shielded && delta < 0) {
           await playersCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-          showToast('🛡️ Blindage absorbé !', 'warning');
+          showToast('🛡️ Blindage absorbe !', 'warning');
           return;
         }
         const next = Math.max(0, Math.min(p.max, (p.hp || 0) + delta));
@@ -724,7 +724,7 @@
           if (player.shielded && newHP < oldHP) {
             player.shielded = false;
             render();
-            showToast('🛡️ Blindage absorbé !', 'warning');
+            showToast('🛡️ Blindage absorbe !', 'warning');
             return;
           }
           player.hp = newHP;
@@ -741,7 +741,7 @@
         // Si blindage actif et qu'on tente de réduire les HP → désactiver blindage
         if (p?.shielded && clamped < oldHP) {
           await playersCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-          showToast('🛡️ Blindage absorbé !', 'warning');
+          showToast('🛡️ Blindage absorbe !', 'warning');
           return;
         }
         return playersCol.doc(String(id)).set({ hp: clamped, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
