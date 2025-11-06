@@ -1030,8 +1030,6 @@
 
     let playersCol;
     let bossesCol;
-    let bossHistoryCol;
-    let playerHistoryCol;
 
     function saveData() {
       if (!USE_FIREBASE) {
@@ -1475,20 +1473,12 @@
           const timeDiff = timestamp - lastAction.timestamp;
           if (timeDiff < 5000) { // 5 secondes
             // Mettre à jour l'action existante
-            if (USE_FIREBASE && lastAction._docId) {
-              bossHistoryCol.doc(lastAction._docId).update({
-                newHP: newHP,
-                delta: newHP - lastAction.oldHP,
-                timestamp: timestamp,
-                time: time
-              });
-            } else {
-              lastAction.newHP = newHP;
-              lastAction.delta = newHP - lastAction.oldHP;
-              lastAction.timestamp = timestamp;
-              lastAction.time = time;
-              render();
-            }
+            lastAction.newHP = newHP;
+            lastAction.delta = newHP - lastAction.oldHP;
+            lastAction.timestamp = timestamp;
+            lastAction.time = time;
+            saveData();
+            render();
             return;
           }
         }
@@ -1496,6 +1486,7 @@
 
       const delta = (oldHP !== null && newHP !== null) ? (newHP - oldHP) : 0;
       const action = {
+        id: timestamp,
         timestamp: timestamp,
         time: time,
         bossId: bossId,
@@ -1506,18 +1497,10 @@
         delta: delta
       };
 
-      if (!USE_FIREBASE) {
-        action.id = timestamp;
-        bossHistory.unshift(action);
-        if (bossHistory.length > 20) bossHistory.pop();
-        render();
-      } else {
-        // Écrire dans Firebase
-        const docRef = bossHistoryCol.doc(String(timestamp));
-        docRef.set(action).then(() => {
-          // Firebase onSnapshot mettra à jour automatiquement
-        });
-      }
+      bossHistory.unshift(action);
+      if (bossHistory.length > 20) bossHistory.pop();
+      saveData();
+      render();
     }
 
     function addToPlayerHistory(playerId, playerName, type, oldHP = null, newHP = null) {
@@ -1532,20 +1515,12 @@
           const timeDiff = timestamp - lastAction.timestamp;
           if (timeDiff < 5000) { // 5 secondes
             // Mettre à jour l'action existante
-            if (USE_FIREBASE && lastAction._docId) {
-              playerHistoryCol.doc(lastAction._docId).update({
-                newHP: newHP,
-                delta: newHP - lastAction.oldHP,
-                timestamp: timestamp,
-                time: time
-              });
-            } else {
-              lastAction.newHP = newHP;
-              lastAction.delta = newHP - lastAction.oldHP;
-              lastAction.timestamp = timestamp;
-              lastAction.time = time;
-              render();
-            }
+            lastAction.newHP = newHP;
+            lastAction.delta = newHP - lastAction.oldHP;
+            lastAction.timestamp = timestamp;
+            lastAction.time = time;
+            saveData();
+            render();
             return;
           }
         }
@@ -1553,6 +1528,7 @@
 
       const delta = (oldHP !== null && newHP !== null) ? (newHP - oldHP) : 0;
       const action = {
+        id: timestamp,
         timestamp: timestamp,
         time: time,
         playerId: playerId,
@@ -1563,78 +1539,62 @@
         delta: delta
       };
 
-      if (!USE_FIREBASE) {
-        action.id = timestamp;
-        playerHistory.unshift(action);
-        if (playerHistory.length > 20) playerHistory.pop();
-        render();
-      } else {
-        // Écrire dans Firebase
-        const docRef = playerHistoryCol.doc(String(timestamp));
-        docRef.set(action).then(() => {
-          // Firebase onSnapshot mettra à jour automatiquement
-        });
-      }
+      playerHistory.unshift(action);
+      if (playerHistory.length > 20) playerHistory.pop();
+      saveData();
+      render();
     }
 
     function undoBossAction(actionId) {
-      const action = bossHistory.find(a => (a.id || a._docId || a.timestamp) == actionId);
+      const action = bossHistory.find(a => (a.id || a.timestamp) == actionId);
       if (!action) return;
 
-      if (!USE_FIREBASE) {
-        const boss = bosses.find(b => b.id === action.bossId);
-        if (boss && action.oldHP !== null) {
-          boss.hp = action.oldHP;
-          bossHistory = bossHistory.filter(a => (a.id || a._docId || a.timestamp) != actionId);
-          render();
+      // Restaurer l'état si c'est un changement de HP
+      if (action.oldHP !== null && action.type !== 'shield_on' && action.type !== 'shield_off') {
+        if (USE_FIREBASE) {
+          bossesCol.doc(String(action.bossId)).update({
+            hp: action.oldHP,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        } else {
+          const boss = bosses.find(b => b.id === action.bossId);
+          if (boss) {
+            boss.hp = action.oldHP;
+          }
         }
-        return;
       }
 
-      // Firebase: restaurer l'état si c'est un changement de HP
-      if (action.oldHP !== null) {
-        bossesCol.doc(String(action.bossId)).update({
-          hp: action.oldHP,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-          // Supprimer l'entrée de l'historique
-          bossHistoryCol.doc(String(actionId)).delete();
-          showToast('✅ Action annulée', 'success');
-        });
-      } else {
-        // Pour les événements shield, juste supprimer de l'historique
-        bossHistoryCol.doc(String(actionId)).delete();
-      }
+      // Supprimer l'action de l'historique
+      bossHistory = bossHistory.filter(a => (a.id || a.timestamp) != actionId);
+      saveData();
+      render();
+      showToast('✅ Action annulée', 'success');
     }
 
     function undoPlayerAction(actionId) {
-      const action = playerHistory.find(a => (a.id || a._docId || a.timestamp) == actionId);
+      const action = playerHistory.find(a => (a.id || a.timestamp) == actionId);
       if (!action) return;
 
-      if (!USE_FIREBASE) {
-        const player = players.find(p => p.id === action.playerId);
-        if (player && action.oldHP !== null) {
-          player.hp = action.oldHP;
-          playerHistory = playerHistory.filter(a => (a.id || a._docId || a.timestamp) != actionId);
-          render();
+      // Restaurer l'état si c'est un changement de HP
+      if (action.oldHP !== null && action.type !== 'shield_on' && action.type !== 'shield_off') {
+        if (USE_FIREBASE) {
+          playersCol.doc(String(action.playerId)).update({
+            hp: action.oldHP,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+        } else {
+          const player = players.find(p => p.id === action.playerId);
+          if (player) {
+            player.hp = action.oldHP;
+          }
         }
-        return;
       }
 
-      // Firebase: restaurer l'état si c'est un changement de HP
-      if (action.oldHP !== null) {
-        playersCol.doc(String(action.playerId)).update({
-          hp: action.oldHP,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-          // Supprimer l'entrée de l'historique
-          playerHistoryCol.doc(String(actionId)).delete();
-          showToast('✅ Action annulée', 'success');
-        });
-      } else {
-        // Pour les événements shield, juste supprimer de l'historique
-        playerHistoryCol.doc(String(actionId)).delete();
-      }
+      // Supprimer l'action de l'historique
+      playerHistory = playerHistory.filter(a => (a.id || a.timestamp) != actionId);
+      saveData();
+      render();
+      showToast('✅ Action annulée', 'success');
     }
 
     let currentBossViewId = null;
@@ -2375,8 +2335,6 @@
       window.db = db;
       playersCol = window.playersCol = db.collection('rooms').doc(ROOM_ID).collection('players');
       bossesCol = window.bossesCol = db.collection('rooms').doc(ROOM_ID).collection('bosses');
-      bossHistoryCol = window.bossHistoryCol = db.collection('rooms').doc(ROOM_ID).collection('bossHistory');
-      playerHistoryCol = window.playerHistoryCol = db.collection('rooms').doc(ROOM_ID).collection('playerHistory');
 
       // Mise à jour du titre avec le nom de la salle
       if (ROOM_ID !== 'AMERTUME_HP') {
@@ -2391,17 +2349,8 @@
         render();
       });
 
-      // Écouter l'historique des boss
-      bossHistoryCol.orderBy('timestamp', 'desc').limit(20).onSnapshot((snap) => {
-        bossHistory = snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
-        render();
-      });
-
-      // Écouter l'historique des joueurs
-      playerHistoryCol.orderBy('timestamp', 'desc').limit(20).onSnapshot((snap) => {
-        playerHistory = snap.docs.map(d => ({ ...d.data(), _docId: d.id }));
-        render();
-      });
+      // L'historique est géré en localStorage uniquement
+      // (pas de synchronisation Firebase pour l'instant)
 
       bossesCol.onSnapshot((snap) => {
         bosses = snap.docs
