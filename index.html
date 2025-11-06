@@ -1388,7 +1388,7 @@
       }
 
       const displayHP = boss.hp === 0 ? '0' : boss.hp;
-      const shieldIcon = boss.shielded ? '<span style="position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); background: #2563eb; color: white; padding: 0.3rem 0.6rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 700; box-shadow: 0 0 10px rgba(37,99,235,.4); z-index: 10;">Blindage</span>' : '';
+      const shieldIcon = boss.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 0.95rem; font-weight: 700; box-shadow: 0 0 12px rgba(37,99,235,.5); z-index: 10;">Blindage</span>' : '';
       const shieldedClass = boss.shielded ? ' shielded' : '';
 
       const content = document.getElementById('boss-view-content');
@@ -1576,7 +1576,7 @@
       const textColor = getTextColor(percent);
       const borderColor = getBorderColor(percent);
       const displayHP = player.hp === 0 ? '0' : player.hp;
-      const shieldIcon = player.shielded ? '<span style="position: absolute; left: 0.5rem; top: 50%; transform: translateY(-50%); background: #2563eb; color: white; padding: 0.3rem 0.6rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 700; box-shadow: 0 0 10px rgba(37,99,235,.4); z-index: 10;">Blindage</span>' : '';
+      const shieldIcon = player.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 0.95rem; font-weight: 700; box-shadow: 0 0 12px rgba(37,99,235,.5); z-index: 10;">Blindage</span>' : '';
       const shieldedClass = player.shielded ? ' shielded' : '';
 
       const content = document.getElementById('player-view-content');
@@ -1639,7 +1639,7 @@
         const textColor = getTextColor(percent);
         const borderColor = getBorderColor(percent);
         const displayHP = p.hp === 0 ? '' : p.hp;
-        const shieldIcon = p.shielded ? '<span style="position: absolute; left: 0.3rem; top: 50%; transform: translateY(-50%); background: #2563eb; color: white; padding: 0.15rem 0.4rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; box-shadow: 0 0 8px rgba(37,99,235,.4); z-index: 10;">Blindage</span>' : '';
+        const shieldIcon = p.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; box-shadow: 0 0 10px rgba(37,99,235,.5); z-index: 10;">Blindage</span>' : '';
         const shieldedClass = p.shielded ? ' shielded' : '';
         return `
           <div class="player-display">
@@ -1686,7 +1686,7 @@
               }
 
               const bgColor = b.hp === 0 ? '#4a0000' : '#0f1419';
-              const shieldIcon = b.shielded ? '<span style="position: absolute; left: 0.3rem; top: 50%; transform: translateY(-50%); background: #2563eb; color: white; padding: 0.15rem 0.4rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; box-shadow: 0 0 8px rgba(37,99,235,.4); z-index: 10;">Blindage</span>' : '';
+              const shieldIcon = b.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; box-shadow: 0 0 10px rgba(37,99,235,.5); z-index: 10;">Blindage</span>' : '';
               const shieldedClass = b.shielded ? ' shielded' : '';
               return `
                 <div class="player-display">
@@ -1716,7 +1716,7 @@
         const textColor = getTextColor(percent);
         const borderColor = getBorderColor(percent);
         const displayHP = p.hp === 0 ? '' : p.hp;
-        const shieldIcon = p.shielded ? '<span style="position: absolute; left: 0.3rem; top: 50%; transform: translateY(-50%); background: #2563eb; color: white; padding: 0.15rem 0.4rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; box-shadow: 0 0 8px rgba(37,99,235,.4); z-index: 10;">Blindage</span>' : '';
+        const shieldIcon = p.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; box-shadow: 0 0 10px rgba(37,99,235,.5); z-index: 10;">Blindage</span>' : '';
         const shieldedClass = p.shielded ? ' shielded' : '';
         return `
           <div class="player-display">
@@ -1763,7 +1763,7 @@
               }
 
               const bgColor = b.hp === 0 ? '#4a0000' : '#0f1419';
-              const shieldIcon = b.shielded ? '<span style="position: absolute; left: 0.3rem; top: 50%; transform: translateY(-50%); background: #2563eb; color: white; padding: 0.15rem 0.4rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 700; box-shadow: 0 0 8px rgba(37,99,235,.4); z-index: 10;">Blindage</span>' : '';
+              const shieldIcon = b.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 700; box-shadow: 0 0 10px rgba(37,99,235,.5); z-index: 10;">Blindage</span>' : '';
               const shieldedClass = b.shielded ? ' shielded' : '';
               return `
                 <div class="player-display">
@@ -1788,25 +1788,11 @@
         const percent = Math.round((p.hp / p.max) * 100);
         const docId = p._docId || String(p.id);
         const shieldedClass = p.shielded ? ' shielded' : (percent <= 10 && p.hp > 0 ? ' critical' : '');
-        const barColor = getHealthColor(percent);
-        const textColor = getTextColor(percent);
-        const borderColor = getBorderColor(percent);
-        const bgColor = p.hp === 0 ? '#4a0000' : '#0f1419';
-        const displayHP = p.hp === 0 ? '' : p.hp;
-        const shieldIcon = p.shielded ? '<span style="position: absolute; left: 0.3rem; top: 50%; transform: translateY(-50%); background: #2563eb; color: white; padding: 0.2rem 0.4rem; border-radius: 9999px; font-size: 0.65rem; font-weight: 700; box-shadow: 0 0 8px rgba(37,99,235,.4); z-index: 10;">Blindage</span>' : '';
         return `
           <div class="edit-card${shieldedClass}" data-player-id="${p.id}">
             <div class="edit-header">
               <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)" aria-label="Couleur de ${p.name}">
               <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" aria-label="Nom du joueur" />
-              <div style="flex: 1; min-width: 150px; margin: 0 0.5rem;">
-                <div class="hp-bar-container${shieldedClass}" style="background-color: ${bgColor}; border-color: ${borderColor}; height: 2rem; position: relative;">
-                  ${shieldIcon}
-                  <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor}; font-size: 0.9rem; line-height: 2rem;" role="progressbar" aria-valuenow="${p.hp}" aria-valuemin="0" aria-valuemax="${p.max}" aria-label="Points de vie de ${p.name}">
-                    ${displayHP}
-                  </div>
-                </div>
-              </div>
               <button class="shield-btn ${p.shielded ? 'active' : ''}" type="button" onclick="toggleShield(${p.id})" aria-label="Activer/Désactiver le blindage de ${p.name}">
                 🛡️ Blindage
               </button>
