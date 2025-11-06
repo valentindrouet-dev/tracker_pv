@@ -933,10 +933,7 @@
       <div class="edit-stack" id="edit-stack"></div>
       <div style="height:.4rem;"></div>
       <div class="display-card" style="margin-top:.2rem;">
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:.4rem;">
-          <button class="btn" onclick="addPlayer()" aria-label="Ajouter un nouveau joueur">+ Ajouter</button>
-          <button class="btn" onclick="resetAll()" aria-label="Réinitialiser tous les joueurs aux valeurs par défaut">🔄 Réinitialiser</button>
-        </div>
+        <button class="btn" onclick="addPlayer()" aria-label="Ajouter un nouveau joueur" style="width: 100%;">+ Ajouter</button>
       </div>
     </section>
 
@@ -1469,7 +1466,6 @@
       if (bosses.length > 0) {
         content.innerHTML += `
           <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid rgba(220, 38, 38, 0.3);">
-            <h2 style="font-size: 1.6rem; font-weight: 900; color: #dc2626; margin-bottom: 1.2rem; text-align: center; text-transform: uppercase; letter-spacing: 0.05em;">⚔️ Ennemis</h2>
             ${bosses.map(b => {
               const percent = Math.round((b.hp / b.max) * 100);
               const bgColor = b.hp === 0 ? '#4a0000' : '#0f1419';
@@ -1522,7 +1518,6 @@
       if (bosses.length > 0) {
         displayArea.innerHTML += `
           <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid rgba(220, 38, 38, 0.3);">
-            <h2 style="font-size: 1.1rem; font-weight: 800; color: #dc2626; margin-bottom: 1rem; text-align: center; text-transform: uppercase; letter-spacing: 0.05em;">⚔️ Ennemis</h2>
             ${bosses.map(b => {
               const percent = Math.round((b.hp / b.max) * 100);
               const bgColor = b.hp === 0 ? '#4a0000' : '#0f1419';
@@ -1590,7 +1585,11 @@
         return `
           <div class="edit-card" data-boss-id="${b.id}">
             <div class="edit-header">
-              <input class="color-pick" type="color" value="${b.color || '#dc2626'}" onchange="updateBoss(${b.id}, 'color', this.value)" aria-label="Couleur de ${b.name}" style="visibility:hidden;">
+              <select onchange="updateBoss(${b.id}, 'color', this.value)" aria-label="Type d'ennemi" style="padding: .3rem .5rem; border-radius: 8px; border: 1px solid var(--border); background: #121828; color: #e5e7eb; font-size: .8rem; font-weight: 600; cursor: pointer;">
+                <option value="#846BAF" ${(b.color === '#846BAF' || b.color === '#846baf') ? 'selected' : ''}>Unique</option>
+                <option value="#BF5750" ${(b.color === '#BF5750' || b.color === '#bf5750') ? 'selected' : ''}>Solitaire</option>
+                <option value="#7D7E7E" ${(b.color === '#7D7E7E' || b.color === '#7d7e7e' || !b.color || b.color === '#dc2626') ? 'selected' : ''}>Sbire</option>
+              </select>
               <input class="edit-name" value="${b.name}" onchange="updateBoss(${b.id}, 'name', this.value)" aria-label="Nom de l'ennemi" placeholder="Nom de l'ennemi" />
               <div class="inline-field">
                 <label>Max</label>
