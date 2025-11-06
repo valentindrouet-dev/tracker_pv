@@ -318,6 +318,40 @@
   width: 0 !important;                        /* truly empty bar */
 }
 
+/* État BLINDAGE : filtre bleu cyan semi-transparent */
+.hp-bar-container.shielded::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg,
+    rgba(59, 130, 246, 0.35),
+    rgba(96, 165, 250, 0.25)
+  );
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 5;
+  animation: shieldPulse 2s ease-in-out infinite;
+}
+
+@keyframes shieldPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Badge shield à côté du nom */
+.shield-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  font-size: 1rem;
+  filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.6));
+  animation: shieldBadgePulse 2s ease-in-out infinite;
+}
+
+@keyframes shieldBadgePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
 </style>
 
 <style id="ui-step4-compact-override">
@@ -489,11 +523,11 @@
     }
 
     const defaultPlayers = [
-      { id: 1, name: "Alchimiste", hp: 32, max: 50, color: "#4a6edb" },
-      { id: 2, name: "Destructeur", hp: 48, max: 50, color: "#c13b3b" },
-      { id: 3, name: "Pyromane", hp: 20, max: 50, color: "#e6a500" },
-      { id: 4, name: "Déviant", hp: 24, max: 50, color: "#c07ce6" },
-      { id: 5, name: "Lamevent", hp: 28, max: 50, color: "#60a853" }
+      { id: 1, name: "Alchimiste", hp: 32, max: 50, color: "#4a6edb", shielded: false },
+      { id: 2, name: "Destructeur", hp: 48, max: 50, color: "#c13b3b", shielded: false },
+      { id: 3, name: "Pyromane", hp: 20, max: 50, color: "#e6a500", shielded: false },
+      { id: 4, name: "Déviant", hp: 24, max: 50, color: "#c07ce6", shielded: false },
+      { id: 5, name: "Lamevent", hp: 28, max: 50, color: "#60a853", shielded: false }
     ];
 
     let players = [];
@@ -540,8 +574,8 @@
     }
 
     function addPlayer() {
-      if (!USE_FIREBASE) { players.push({ id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af" }); return render(); }
-      const p = { id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", __deleted: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      if (!USE_FIREBASE) { players.push({ id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", shielded: false }); return render(); }
+      const p = { id: nextId++, name: "Nouveau", hp: 10, max: 20, color: "#9ca3af", shielded: false, __deleted: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
       playersCol.doc(String(p.id)).set(p, { merge: true });
     }
 
@@ -595,6 +629,21 @@
       else if (field === 'name' || field === 'color') patch[field] = value;
       else if (field === 'hp') patch.hp = Math.max(0, Number(value) || 0);
       playersCol.doc(String(id)).set(patch, { merge: true });
+    }
+
+    function toggleShield(id) {
+      if (!USE_FIREBASE) {
+        const player = players.find(p => p.id === id);
+        if (player) {
+          player.shielded = !player.shielded;
+          render();
+        }
+        return;
+      }
+      playersCol.doc(String(id)).get().then(snap => {
+        const current = snap.data()?.shielded || false;
+        return playersCol.doc(String(id)).set({ shielded: !current, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      });
     }
 
     const debounceMap = new Map();
@@ -685,13 +734,15 @@
         const textColor = getTextColor(percent);
         const borderColor = getBorderColor(percent);
         const displayHP = p.hp === 0 ? '' : p.hp;
+        const shieldBadge = p.shielded ? '<span class="shield-badge">🛡️</span>' : '';
+        const shieldedClass = p.shielded ? ' shielded' : '';
         return `
           <div class="player-display">
             <div class="player-header">
-              <div class="player-name-display" style="color: ${p.color}">${p.name}</div>
+              <div class="player-name-display" style="color: ${p.color}">${p.name}${shieldBadge}</div>
               <div class="player-percent">${percent}%</div>
             </div>
-            <div class="hp-bar-container" style="background-color: ${bgColor}; border-color: ${borderColor};">
+            <div class="hp-bar-container${shieldedClass}" style="background-color: ${bgColor}; border-color: ${borderColor};">
               <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};" role="progressbar" aria-valuenow="${p.hp}" aria-valuemin="0" aria-valuemax="${p.max}" aria-label="Points de vie de ${p.name}">
                 ${displayHP}
               </div>
@@ -711,13 +762,15 @@
         const textColor = getTextColor(percent);
         const borderColor = getBorderColor(percent);
         const displayHP = p.hp === 0 ? '' : p.hp;
+        const shieldBadge = p.shielded ? '<span class="shield-badge">🛡️</span>' : '';
+        const shieldedClass = p.shielded ? ' shielded' : '';
         return `
           <div class="player-display">
             <div class="player-header">
-              <div class="player-name-display" style="color: ${p.color}">${p.name}</div>
+              <div class="player-name-display" style="color: ${p.color}">${p.name}${shieldBadge}</div>
               <div class="player-percent">${percent}%</div>
             </div>
-            <div class="hp-bar-container" style="background-color: ${bgColor}; border-color: ${borderColor};">
+            <div class="hp-bar-container${shieldedClass}" style="background-color: ${bgColor}; border-color: ${borderColor};">
               <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};" role="progressbar" aria-valuenow="${p.hp}" aria-valuemin="0" aria-valuemax="${p.max}" aria-label="Points de vie de ${p.name}">
                 ${displayHP}
               </div>
@@ -755,7 +808,10 @@
   <button class="key pos" onclick="setHP(${p.id}, ${p.max})" type="button" aria-label="Restaurer ${p.name} au maximum (${p.max} PV)">💚</button>
 </div>
 
-              <div style="display:flex; justify-content:flex-end;">
+              <div style="display:flex; justify-content:space-between; gap:.5rem;">
+  <button class="btn ${p.shielded ? 'pos' : ''}" type="button" onclick="toggleShield(${p.id})" aria-label="${p.shielded ? 'Désactiver' : 'Activer'} le blindage de ${p.name}">
+    ${p.shielded ? '🛡️ Blindage actif' : '🛡️ Activer blindage'}
+  </button>
   <button class="danger-btn" type="button" onclick="removePlayer(${p.id}, '${docId}')" aria-label="Supprimer ${p.name}">🗑️ Supprimer</button>
 </div>
             </div>
