@@ -941,7 +941,8 @@
       <div class="edit-stack" id="mj-stack"></div>
       <div style="height:.4rem;"></div>
       <div class="display-card" style="margin-top:.2rem;">
-        <div style="display:grid; grid-template-columns: 1fr; gap:.4rem;">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:.4rem;">
+          <button class="btn" onclick="sortBossesByName()" aria-label="Trier les ennemis par nom">📝 Trier par nom</button>
           <button class="btn" onclick="addBoss()" aria-label="Ajouter un nouvel ennemi">+ Ajouter un ennemi</button>
         </div>
       </div>
@@ -1162,7 +1163,7 @@
     function addBoss() {
       console.log('addBoss called, USE_FIREBASE:', USE_FIREBASE, 'bossesCol:', bossesCol);
       if (!USE_FIREBASE) {
-        bosses.push({ id: nextBossId++, name: "Boss", hp: 100, max: 100, color: "#ef4444", imageUrl: "" });
+        bosses.push({ id: nextBossId++, name: "Boss", hp: 100, max: 100, color: "#ef4444", imageUrl: "", order: bosses.length });
         render();
         return;
       }
@@ -1171,7 +1172,7 @@
         showToast('⚠️ Initialisation en cours, réessayez dans un instant', 'error');
         return;
       }
-      const b = { id: nextBossId++, name: "Boss", hp: 100, max: 100, color: "#ef4444", imageUrl: "", __deleted: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      const b = { id: nextBossId++, name: "Boss", hp: 100, max: 100, color: "#ef4444", imageUrl: "", order: bosses.length, __deleted: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
       console.log('Adding boss with nextBossId:', b.id, 'boss object:', b);
       console.log('bossesCol path:', bossesCol.path);
       bossesCol.doc(String(b.id)).set(b, { merge: true })
@@ -1208,6 +1209,49 @@
         console.error('soft delete boss by id failed', e);
         showToast('⚠️ Erreur de suppression. Réessayez.', 'error');
       }
+    }
+
+    function sortBossesByName() {
+      bosses.sort((a, b) => a.name.localeCompare(b.name));
+
+      if (!USE_FIREBASE) {
+        render();
+        showToast('✅ Ennemis triés par nom', 'success');
+        return;
+      }
+
+      // Update order in Firebase
+      bosses.forEach((boss, index) => {
+        const docId = boss._docId || String(boss.id);
+        bossesCol.doc(docId).set({ order: index, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      });
+
+      render();
+      showToast('✅ Ennemis triés par nom', 'success');
+    }
+
+    function moveBoss(id, direction) {
+      const index = bosses.findIndex(b => b.id === id);
+      if (index === -1) return;
+
+      const newIndex = direction === 'up' ? index - 1 : index + 1;
+      if (newIndex < 0 || newIndex >= bosses.length) return;
+
+      // Swap bosses
+      [bosses[index], bosses[newIndex]] = [bosses[newIndex], bosses[index]];
+
+      if (!USE_FIREBASE) {
+        render();
+        return;
+      }
+
+      // Update order in Firebase
+      bosses.forEach((boss, idx) => {
+        const docId = boss._docId || String(boss.id);
+        bossesCol.doc(docId).set({ order: idx, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      });
+
+      render();
     }
 
     function updateBoss(id, field, val) {
@@ -1606,20 +1650,45 @@
         `;
       }).join('');
 
-      // Enemies display in fullscreen - red bars without HP values
-      if (bosses.length > 0) {
+      // Enemies display in fullscreen - colored bars without HP values (only show non-hidden enemies)
+      const visibleBosses = bosses.filter(b => !b.hidden);
+      if (visibleBosses.length > 0) {
         content.innerHTML += `
           <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid rgba(220, 38, 38, 0.3);">
-            ${bosses.map(b => {
+            ${visibleBosses.map(b => {
               const percent = Math.round((b.hp / b.max) * 100);
+              const enemyColor = b.color || '#7D7E7E'; // Default to Sbire
+
+              // Create gradient based on enemy type
+              let gradient, borderColor, nameColor;
+              if (enemyColor.toUpperCase() === '#846BAF') {
+                // Unique - violet
+                gradient = 'linear-gradient(90deg, #5a4a7d, #846BAF)';
+                borderColor = 'rgba(132, 107, 175, 0.6)';
+                nameColor = '#846BAF';
+              } else if (enemyColor.toUpperCase() === '#BF5750') {
+                // Solitaire - rouge
+                gradient = 'linear-gradient(90deg, #7f1d1d, #BF5750)';
+                borderColor = 'rgba(191, 87, 80, 0.6)';
+                nameColor = '#BF5750';
+              } else {
+                // Sbire - gris
+                gradient = 'linear-gradient(90deg, #4a4a4a, #7D7E7E)';
+                borderColor = 'rgba(125, 126, 126, 0.6)';
+                nameColor = '#7D7E7E';
+              }
+
               const bgColor = b.hp === 0 ? '#4a0000' : '#0f1419';
+              const shieldIcon = b.shielded ? '<span class="hp-bar-shield">🛡️</span>' : '';
+              const shieldedClass = b.shielded ? ' shielded' : '';
               return `
                 <div class="player-display">
                   <div class="player-header">
-                    <div class="player-name-display" style="color: #dc2626">${b.name}</div>
+                    <div class="player-name-display" style="color: ${nameColor}">${b.name}</div>
                   </div>
-                  <div class="hp-bar-container enemy-bar" style="background-color: ${bgColor}; border-color: rgba(220, 38, 38, 0.6);">
-                    <div class="hp-bar" data-boss-id="${b.id}" style="width: ${percent}%; background: linear-gradient(90deg, #7f1d1d, #991b1b); color: transparent;" role="progressbar" aria-valuenow="${b.hp}" aria-valuemin="0" aria-valuemax="${b.max}" aria-label="Points de vie de ${b.name}">
+                  <div class="hp-bar-container enemy-bar${shieldedClass}" style="background-color: ${bgColor}; border-color: ${borderColor};">
+                    ${shieldIcon}
+                    <div class="hp-bar" data-boss-id="${b.id}" style="width: ${percent}%; background: ${gradient}; color: transparent;" role="progressbar" aria-valuenow="${b.hp}" aria-valuemin="0" aria-valuemax="${b.max}" aria-label="Points de vie de ${b.name}">
                     </div>
                   </div>
                 </div>
@@ -1687,12 +1756,15 @@
               }
 
               const bgColor = b.hp === 0 ? '#4a0000' : '#0f1419';
+              const shieldIcon = b.shielded ? '<span class="hp-bar-shield">🛡️</span>' : '';
+              const shieldedClass = b.shielded ? ' shielded' : '';
               return `
                 <div class="player-display">
                   <div class="player-header">
                     <div class="player-name-display" style="color: ${nameColor}">${b.name}</div>
                   </div>
-                  <div class="hp-bar-container enemy-bar" style="background-color: ${bgColor}; border-color: ${borderColor};">
+                  <div class="hp-bar-container enemy-bar${shieldedClass}" style="background-color: ${bgColor}; border-color: ${borderColor};">
+                    ${shieldIcon}
                     <div class="hp-bar" data-boss-id="${b.id}" style="width: ${percent}%; background: ${gradient}; color: transparent;" role="progressbar" aria-valuenow="${b.hp}" aria-valuemin="0" aria-valuemax="${b.max}" aria-label="Points de vie de ${b.name}">
                     </div>
                   </div>
@@ -1745,10 +1817,12 @@
 
       // MJ section for enemies/monsters
       const mjStack = document.getElementById('mj-stack');
-      mjStack.innerHTML = bosses.map(b => {
+      mjStack.innerHTML = bosses.map((b, index) => {
         const percent = Math.round((b.hp / b.max) * 100);
         const docId = b._docId || String(b.id);
         const shieldedClass = b.shielded ? ' shielded' : (percent <= 10 && b.hp > 0 ? ' critical' : '');
+        const isFirst = index === 0;
+        const isLast = index === bosses.length - 1;
         return `
           <div class="edit-card${shieldedClass}" data-boss-id="${b.id}">
             <div class="edit-header">
@@ -1766,6 +1840,8 @@
                 <input type="number" value="${b.max}" min="1" onchange="updateBoss(${b.id}, 'max', parseInt(this.value))" aria-label="PV maximum de ${b.name}">
               </div>
               <span class="badge">${b.hp}/${b.max}</span>
+              <button class="phone-view-btn" type="button" onclick="moveBoss(${b.id}, 'up')" aria-label="Déplacer ${b.name} vers le haut" ${isFirst ? 'disabled style="opacity: 0.3; cursor: not-allowed;"' : ''}>⬆️</button>
+              <button class="phone-view-btn" type="button" onclick="moveBoss(${b.id}, 'down')" aria-label="Déplacer ${b.name} vers le bas" ${isLast ? 'disabled style="opacity: 0.3; cursor: not-allowed;"' : ''}>⬇️</button>
               <button class="danger-btn" type="button" onclick="removeBoss(${b.id}, '${docId}')" aria-label="Supprimer ${b.name}">🗑️</button>
               <button class="phone-view-btn" type="button" onclick="openBossView(${b.id})" aria-label="Vue mobile pour ${b.name}">📱</button>
               <button class="shield-btn ${b.hidden ? '' : 'active'}" type="button" onclick="toggleBossHidden(${b.id})" aria-label="Cacher/Révéler ${b.name}">
@@ -1863,10 +1939,21 @@
         render();
       });
 
-      bossesCol.orderBy('id').onSnapshot((snap) => {
+      bossesCol.onSnapshot((snap) => {
         bosses = snap.docs
           .map(d => ({ ...d.data(), _docId: d.id }))
           .filter(b => !b.__deleted);
+
+        // Sort by order field, then by id
+        bosses.sort((a, b) => {
+          if (a.order !== undefined && b.order !== undefined) {
+            return a.order - b.order;
+          }
+          if (a.order !== undefined) return -1;
+          if (b.order !== undefined) return 1;
+          return a.id - b.id;
+        });
+
         nextBossId = bosses.length ? Math.max(...bosses.map(b => b.id)) + 1 : 1;
         render();
       });
