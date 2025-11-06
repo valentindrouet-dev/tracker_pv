@@ -971,6 +971,13 @@
 
   <script>
     function setTab(which) {
+      // Avertissement pour l'onglet MJ
+      if (which === 'mj') {
+        if (!confirm('⚠️ Attention, cette section est réservée au Maître du Jeu !\n\nElle contient des informations sur les ennemis cachés et les contrôles de la partie.\n\nContinuer ?')) {
+          return; // Annuler le changement d'onglet
+        }
+      }
+
       document.getElementById('section-display').style.display = which === 'display' ? '' : 'none';
       document.getElementById('section-edit').style.display = which === 'edit' ? '' : 'none';
       document.getElementById('section-mj').style.display = which === 'mj' ? '' : 'none';
@@ -1823,15 +1830,33 @@
         const shieldedClass = b.shielded ? ' shielded' : (percent <= 10 && b.hp > 0 ? ' critical' : '');
         const isFirst = index === 0;
         const isLast = index === bosses.length - 1;
+
+        // Couleurs selon le type d'ennemi
+        const enemyColor = b.color || '#7D7E7E';
+        let bgColor, nameColor;
+        if (enemyColor.toUpperCase() === '#846BAF') {
+          // Unique - violet
+          bgColor = 'rgba(132, 107, 175, 0.15)';
+          nameColor = '#b39ddb';
+        } else if (enemyColor.toUpperCase() === '#BF5750') {
+          // Solitaire - rouge
+          bgColor = 'rgba(191, 87, 80, 0.15)';
+          nameColor = '#e57373';
+        } else {
+          // Sbire - gris
+          bgColor = 'rgba(125, 126, 126, 0.15)';
+          nameColor = '#a1a1a1';
+        }
+
         return `
-          <div class="edit-card${shieldedClass}" data-boss-id="${b.id}">
+          <div class="edit-card${shieldedClass}" data-boss-id="${b.id}" style="background: ${bgColor}; border: 1px solid ${enemyColor}40;">
             <div class="edit-header">
               <select onchange="updateBoss(${b.id}, 'color', this.value)" aria-label="Type d'ennemi" style="padding: .3rem .5rem; border-radius: 8px; border: 1px solid var(--border); background: #121828; color: #e5e7eb; font-size: .8rem; font-weight: 600; cursor: pointer;">
                 <option value="#846BAF" ${(b.color === '#846BAF' || b.color === '#846baf') ? 'selected' : ''}>Unique</option>
                 <option value="#BF5750" ${(b.color === '#BF5750' || b.color === '#bf5750') ? 'selected' : ''}>Solitaire</option>
                 <option value="#7D7E7E" ${(b.color === '#7D7E7E' || b.color === '#7d7e7e' || !b.color || b.color === '#dc2626') ? 'selected' : ''}>Sbire</option>
               </select>
-              <input class="edit-name" value="${b.name}" onchange="updateBoss(${b.id}, 'name', this.value)" aria-label="Nom de l'ennemi" placeholder="Nom de l'ennemi" />
+              <input class="edit-name" value="${b.name}" onchange="updateBoss(${b.id}, 'name', this.value)" aria-label="Nom de l'ennemi" placeholder="Nom de l'ennemi" style="color: ${nameColor}; font-weight: 700;" />
               <button class="shield-btn ${b.shielded ? 'active' : ''}" type="button" onclick="toggleBossShield(${b.id})" aria-label="Activer/Désactiver le blindage de ${b.name}">
                 🛡️ Blindage
               </button>
@@ -1842,7 +1867,7 @@
               <span class="badge">${b.hp}/${b.max}</span>
               <button class="phone-view-btn" type="button" onclick="moveBoss(${b.id}, 'up')" aria-label="Déplacer ${b.name} vers le haut" ${isFirst ? 'disabled style="opacity: 0.3; cursor: not-allowed;"' : ''}>⬆️</button>
               <button class="phone-view-btn" type="button" onclick="moveBoss(${b.id}, 'down')" aria-label="Déplacer ${b.name} vers le bas" ${isLast ? 'disabled style="opacity: 0.3; cursor: not-allowed;"' : ''}>⬇️</button>
-              <button class="danger-btn" type="button" onclick="removeBoss(${b.id}, '${docId}')" aria-label="Supprimer ${b.name}">🗑️</button>
+              <button class="danger-btn" type="button" onclick="if(confirm('Êtes-vous sûr de vouloir supprimer ${b.name.replace(/'/g, "\\'")} ?')) removeBoss(${b.id}, '${docId}')" aria-label="Supprimer ${b.name}">🗑️</button>
               <button class="phone-view-btn" type="button" onclick="openBossView(${b.id})" aria-label="Vue mobile pour ${b.name}">📱</button>
               <button class="shield-btn ${b.hidden ? '' : 'active'}" type="button" onclick="toggleBossHidden(${b.id})" aria-label="Cacher/Révéler ${b.name}">
                 ${b.hidden ? '👁️ Révéler' : '🙈 Cacher'}
