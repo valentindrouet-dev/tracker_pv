@@ -1514,20 +1514,41 @@
         `;
       }).join('');
 
-      // Enemies display section - red bars without HP values
+      // Enemies display section - colored bars without HP values
       if (bosses.length > 0) {
         displayArea.innerHTML += `
           <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid rgba(220, 38, 38, 0.3);">
             ${bosses.map(b => {
               const percent = Math.round((b.hp / b.max) * 100);
+              const enemyColor = b.color || '#7D7E7E'; // Default to Sbire
+
+              // Create gradient based on enemy type
+              let gradient, borderColor, nameColor;
+              if (enemyColor.toUpperCase() === '#846BAF') {
+                // Unique - violet
+                gradient = 'linear-gradient(90deg, #5a4a7d, #846BAF)';
+                borderColor = 'rgba(132, 107, 175, 0.6)';
+                nameColor = '#846BAF';
+              } else if (enemyColor.toUpperCase() === '#BF5750') {
+                // Solitaire - rouge
+                gradient = 'linear-gradient(90deg, #7f1d1d, #BF5750)';
+                borderColor = 'rgba(191, 87, 80, 0.6)';
+                nameColor = '#BF5750';
+              } else {
+                // Sbire - gris
+                gradient = 'linear-gradient(90deg, #4a4a4a, #7D7E7E)';
+                borderColor = 'rgba(125, 126, 126, 0.6)';
+                nameColor = '#7D7E7E';
+              }
+
               const bgColor = b.hp === 0 ? '#4a0000' : '#0f1419';
               return `
                 <div class="player-display">
                   <div class="player-header">
-                    <div class="player-name-display" style="color: #dc2626">${b.name}</div>
+                    <div class="player-name-display" style="color: ${nameColor}">${b.name}</div>
                   </div>
-                  <div class="hp-bar-container enemy-bar" style="background-color: ${bgColor}; border-color: rgba(220, 38, 38, 0.6);">
-                    <div class="hp-bar" data-boss-id="${b.id}" style="width: ${percent}%; background: linear-gradient(90deg, #7f1d1d, #991b1b); color: transparent;" role="progressbar" aria-valuenow="${b.hp}" aria-valuemin="0" aria-valuemax="${b.max}" aria-label="Points de vie de ${b.name}">
+                  <div class="hp-bar-container enemy-bar" style="background-color: ${bgColor}; border-color: ${borderColor};">
+                    <div class="hp-bar" data-boss-id="${b.id}" style="width: ${percent}%; background: ${gradient}; color: transparent;" role="progressbar" aria-valuenow="${b.hp}" aria-valuemin="0" aria-valuemax="${b.max}" aria-label="Points de vie de ${b.name}">
                     </div>
                   </div>
                 </div>
