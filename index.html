@@ -1770,6 +1770,83 @@
       showToast('✅ Action annulée', 'success');
     }
 
+    // Fonction helper pour générer la dernière ligne d'historique pour la vue mobile
+    function getLastHistoryLineHTML(historyArray, entityType) {
+      if (!historyArray || historyArray.length === 0) {
+        return '<div style="text-align: center; padding: 0.5rem; color: #6b7280; font-size: 0.75rem;">Aucune action récente</div>';
+      }
+
+      const action = historyArray[0]; // Dernière action
+      let message, borderColor, entityColor, entityName, entityMax;
+
+      if (entityType === 'boss') {
+        const boss = bosses.find(b => b.id === action.bossId);
+        const enemyColor = boss?.color || '#7D7E7E';
+        entityMax = boss?.max || 100;
+        entityName = action.bossName;
+
+        if (enemyColor.toUpperCase() === '#846BAF') {
+          entityColor = '#b39ddb'; // Unique - violet
+        } else if (enemyColor.toUpperCase() === '#BF5750') {
+          entityColor = '#e57373'; // Solitaire - rouge
+        } else {
+          entityColor = '#a1a1a1'; // Sbire - gris
+        }
+      } else {
+        const player = players.find(p => p.id === action.playerId);
+        entityColor = player?.color || '#22c55e';
+        entityMax = player?.max || 100;
+        entityName = action.playerName;
+      }
+
+      // Générer le message selon le type
+      if (action.type === 'death') {
+        const oldColor = getHPTextColor(action.oldHP, entityMax);
+        message = `<strong style="color: ${entityColor};">${entityName}</strong> est mort et passe de <strong style="color: ${oldColor};">${action.oldHP}</strong> à <strong style="color: #dc2626;">0</strong> pv`;
+        borderColor = '#dc2626';
+      } else if (action.type === 'full_heal') {
+        const oldColor = getHPTextColor(action.oldHP, entityMax);
+        const newColor = getHPTextColor(action.newHP, entityMax);
+        const healAmount = action.newHP - action.oldHP;
+        message = `<strong style="color: ${entityColor};">${entityName}</strong> récupère tous ses PV (<strong style="color: ${oldColor};">${action.oldHP}</strong> → <strong style="color: ${newColor};">${action.newHP}</strong>)`;
+        borderColor = '#22c55e';
+      } else if (action.type === 'shield_on') {
+        message = `<strong style="color: ${entityColor};">${entityName}</strong> active son <strong style="color: #2563eb;">blindage</strong>`;
+        borderColor = '#2563eb';
+      } else if (action.type === 'shield_off') {
+        message = `<strong style="color: ${entityColor};">${entityName}</strong> perd son <strong style="color: #2563eb;">blindage</strong>`;
+        borderColor = '#9ca3af';
+      } else if (action.type === 'shield_absorbed') {
+        if (action.damageAvoided === 'death') {
+          message = `<strong style="color: ${entityColor};">${entityName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite la mort`;
+        } else {
+          message = `<strong style="color: ${entityColor};">${entityName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite de perdre <span style="color: #fca5a5; font-weight: 600;">-${action.damageAvoided} pv</span>`;
+        }
+        borderColor = '#2563eb';
+      } else if (action.type === 'burn') {
+        const fireDamage = action.damageAvoided || Math.abs(action.delta);
+        message = `<strong style="color: ${entityColor};">${entityName}</strong> subit une <strong style="color: #fb923c;">brûlure</strong> <span style="color: #fca5a5; font-weight: 600;">(-${fireDamage} pv)</span> !`;
+        borderColor = '#fb923c';
+      } else {
+        // damage ou heal
+        const deltaText = action.delta > 0 ? `(+${action.delta} pv)` : `(${action.delta} pv)`;
+        const deltaColor = action.delta > 0 ? '#86efac' : '#fca5a5';
+        const oldColor = getHPTextColor(action.oldHP, entityMax);
+        const newColor = getHPTextColor(action.newHP, entityMax);
+        message = `<strong style="color: ${entityColor};">${entityName}</strong> passe de <strong style="color: ${oldColor};">${action.oldHP}</strong> à <strong style="color: ${newColor};">${action.newHP}</strong> pv <span style="color: ${deltaColor}; font-weight: 600;">${deltaText}</span>`;
+        borderColor = action.delta > 0 ? '#86efac' : '#fca5a5';
+      }
+
+      return `
+        <div style="padding: 0.5rem; background: rgba(30, 41, 59, 0.5); border-radius: 6px; border-left: 3px solid ${borderColor};">
+          <span style="color: #9ca3af; font-size: 0.7rem; font-weight: 600;">${action.time}</span>
+          <span style="color: #e5e7eb; font-size: 0.8rem; margin-left: 0.5rem; display: inline-block;">
+            ${message}
+          </span>
+        </div>
+      `;
+    }
+
     let currentBossViewId = null;
 
     function openBossView(id) {
@@ -1877,6 +1954,11 @@
               Blindage ${boss.shielded ? '(ACTIF)' : ''}
             </button>
           </div>
+        </div>
+
+        <div style="margin-top: 1rem; padding: 0 0.5rem;">
+          <div style="font-size: 0.75rem; font-weight: 700; color: #9ca3af; margin-bottom: 0.4rem;">📜 Dernière action</div>
+          ${getLastHistoryLineHTML(bossHistory.filter(a => a.bossId === ${boss.id}), 'boss')}
         </div>
 
         <button class="player-view-close" onclick="closeBossView();">
@@ -2123,6 +2205,11 @@
               Blindage ${player.shielded ? '(ACTIF)' : ''}
             </button>
           </div>
+        </div>
+
+        <div style="margin-top: 1rem; padding: 0 0.5rem;">
+          <div style="font-size: 0.75rem; font-weight: 700; color: #9ca3af; margin-bottom: 0.4rem;">📜 Dernière action</div>
+          ${getLastHistoryLineHTML(playerHistory.filter(a => a.playerId === ${player.id}), 'player')}
         </div>
 
         <button class="player-view-close" onclick="closePlayerView();">
