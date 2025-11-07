@@ -339,6 +339,24 @@
       color: #fff;
       box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
     }
+    .player-view-fire-btn {
+      width: 100%;
+      min-height: 60px;
+      margin-top: 1rem;
+      border-radius: 12px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #7f1d1d, #991b1b);
+      border: 2px solid #dc2626;
+      color: #fca5a5;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .player-view-fire-btn:active {
+      background: linear-gradient(135deg, #991b1b, #b91c1c);
+      border-color: #ef4444;
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    }
     .player-view-close {
       width: 100%;
       min-height: 60px;
@@ -953,7 +971,7 @@
           <button onclick="sortPlayers('hpasc')" id="sort-hpasc" class="btn-sort" aria-label="Trier par PV croissants">PV Min</button>
         </div>
       </div>
-      <div class="display-card" style="margin-top: 1rem;">
+      <div class="display-card" id="bosses-display-card" style="margin-top: 1rem;">
         <div id="display-area-bosses"></div>
       </div>
     </section>
@@ -1834,6 +1852,10 @@
             </div>
           </div>
 
+          <button class="player-view-fire-btn" onclick="applyBossFireDamage(${boss.id}); renderBossView();">
+            Feu (1d6)
+          </button>
+
           <button class="player-view-shield-btn ${boss.shielded ? 'active' : ''}" onclick="toggleBossShield(${boss.id}); renderBossView();">
             Blindage ${boss.shielded ? '(ACTIF)' : ''}
           </button>
@@ -2053,6 +2075,10 @@
             </div>
           </div>
 
+          <button class="player-view-fire-btn" onclick="applyFireDamage(${player.id}); renderPlayerView();">
+            Feu (1d6)
+          </button>
+
           <button class="player-view-shield-btn ${player.shielded ? 'active' : ''}" onclick="toggleShield(${player.id}); renderPlayerView();">
             Blindage ${player.shielded ? '(ACTIF)' : ''}
           </button>
@@ -2076,36 +2102,40 @@
     function renderFullscreen() {
       const content = document.getElementById('fullscreen-content');
       const sorted = getSortedPlayers();
-      content.innerHTML = sorted.map(p => {
-        const percent = Math.round((p.hp / p.max) * 100);
-        const bgColor = p.hp === 0 ? '#4a0000' : '#0f1419';
-        const barColor = getHealthColor(percent);
-        const textColor = getTextColor(percent);
-        const borderColor = getBorderColor(percent);
-        const displayHP = p.hp === 0 ? '' : p.hp;
-        const shieldIcon = p.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.5rem 1rem; border-radius: 9999px; font-size: 1.2rem; font-weight: 700; box-shadow: 0 0 14px rgba(37,99,235,.6); z-index: 10;">Blindage</span>' : '';
-        const shieldedClass = p.shielded ? ' shielded' : '';
-        return `
-          <div class="player-display">
-            <div class="player-header">
-              <div class="player-name-display" style="color: ${p.color}">${p.name}</div>
-              <div class="player-percent">${percent}%</div>
-            </div>
-            <div class="hp-bar-container${shieldedClass}" style="background-color: ${bgColor}; border-color: ${borderColor};">
-              ${shieldIcon}
-              <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};" role="progressbar" aria-valuenow="${p.hp}" aria-valuemin="0" aria-valuemax="${p.max}" aria-label="Points de vie de ${p.name}">
-                ${displayHP}
+      content.innerHTML = `
+        <div class="display-card">
+          ${sorted.map(p => {
+            const percent = Math.round((p.hp / p.max) * 100);
+            const bgColor = p.hp === 0 ? '#4a0000' : '#0f1419';
+            const barColor = getHealthColor(percent);
+            const textColor = getTextColor(percent);
+            const borderColor = getBorderColor(percent);
+            const displayHP = p.hp === 0 ? '' : p.hp;
+            const shieldIcon = p.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.5rem 1rem; border-radius: 9999px; font-size: 1.2rem; font-weight: 700; box-shadow: 0 0 14px rgba(37,99,235,.6); z-index: 10;">Blindage</span>' : '';
+            const shieldedClass = p.shielded ? ' shielded' : '';
+            return `
+              <div class="player-display">
+                <div class="player-header">
+                  <div class="player-name-display" style="color: ${p.color}">${p.name}</div>
+                  <div class="player-percent">${percent}%</div>
+                </div>
+                <div class="hp-bar-container${shieldedClass}" style="background-color: ${bgColor}; border-color: ${borderColor};">
+                  ${shieldIcon}
+                  <div class="hp-bar" data-player-id="${p.id}" style="width: ${percent}%; background: ${barColor}; color: ${textColor};" role="progressbar" aria-valuenow="${p.hp}" aria-valuemin="0" aria-valuemax="${p.max}" aria-label="Points de vie de ${p.name}">
+                    ${displayHP}
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        `;
-      }).join('');
+            `;
+          }).join('')}
+        </div>
+      `;
 
       // Enemies display in fullscreen - colored bars without HP values (only show non-hidden enemies)
       const visibleBosses = bosses.filter(b => !b.hidden);
       if (visibleBosses.length > 0) {
         content.innerHTML += `
-          <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid rgba(220, 38, 38, 0.3);">
+          <div class="display-card" style="margin-top: 1rem;">
             ${visibleBosses.map(b => {
               const percent = Math.round((b.hp / b.max) * 100);
               const enemyColor = b.color || '#7D7E7E'; // Default to Sbire
@@ -2180,8 +2210,10 @@
 
       // Enemies display section - colored bars without HP values (only show non-hidden enemies)
       const displayAreaBosses = document.getElementById('display-area-bosses');
+      const bossesDisplayCard = document.getElementById('bosses-display-card');
       const visibleBosses = bosses.filter(b => !b.hidden);
       if (visibleBosses.length > 0) {
+        bossesDisplayCard.style.display = '';
         displayAreaBosses.innerHTML = visibleBosses.map(b => {
           const percent = Math.round((b.hp / b.max) * 100);
           const enemyColor = b.color || '#7D7E7E'; // Default to Sbire
@@ -2222,6 +2254,7 @@
           `;
         }).join('');
       } else {
+        bossesDisplayCard.style.display = 'none';
         displayAreaBosses.innerHTML = '';
       }
 
