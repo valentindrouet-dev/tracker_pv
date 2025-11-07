@@ -2255,9 +2255,9 @@
               borderColor = '#9ca3af';
             } else if (action.type === 'shield_absorbed') {
               if (action.damageAvoided === 'death') {
-                message = `🛡️ <strong style="color: ${nameColor};">${action.bossName}</strong> perd son blindage et évite la mort`;
+                message = `🛡️ <strong style="color: ${nameColor};">${action.bossName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite la mort`;
               } else {
-                message = `🛡️ <strong style="color: ${nameColor};">${action.bossName}</strong> perd son blindage et évite de subir <strong>${action.damageAvoided}</strong> dégâts`;
+                message = `🛡️ <strong style="color: ${nameColor};">${action.bossName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite de perdre <span style="color: #fca5a5; font-weight: 600;">-${action.damageAvoided} pv</span>`;
               }
               borderColor = '#2563eb';
             } else {
@@ -2312,9 +2312,9 @@
               borderColor = '#9ca3af';
             } else if (action.type === 'shield_absorbed') {
               if (action.damageAvoided === 'death') {
-                message = `🛡️ <strong style="color: ${playerColor};">${action.playerName}</strong> perd son blindage et évite la mort`;
+                message = `🛡️ <strong style="color: ${playerColor};">${action.playerName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite la mort`;
               } else {
-                message = `🛡️ <strong style="color: ${playerColor};">${action.playerName}</strong> perd son blindage et évite de subir <strong>${action.damageAvoided}</strong> dégâts`;
+                message = `🛡️ <strong style="color: ${playerColor};">${action.playerName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite de perdre <span style="color: #fca5a5; font-weight: 600;">-${action.damageAvoided} pv</span>`;
               }
               borderColor = '#2563eb';
             } else {
