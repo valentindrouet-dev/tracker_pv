@@ -591,9 +591,9 @@
 .fire-btn {
   padding: .3rem .5rem;
   border-radius: 8px;
-  border: 1px solid #dc2626;
-  background: #7f1d1d;
-  color: #fca5a5;
+  border: 2px solid #a85a5a;
+  background: linear-gradient(135deg, #5c2828, #7f3838);
+  color: #d4a5a5;
   font-size: .8rem;
   font-weight: 600;
   white-space: nowrap;
@@ -601,10 +601,10 @@
   transition: all 0.2s;
 }
 .fire-btn:hover {
-  background: #991b1b;
-  color: #fecaca;
-  border-color: #ef4444;
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+  background: linear-gradient(135deg, #7f3838, #9f4848);
+  color: #d4a5a5;
+  border-color: #c86a6a;
+  box-shadow: 0 0 8px rgba(220, 38, 38, 0.3);
 }
 
 /* Carte d'édition en danger critique (HP rouges < 10%) */
@@ -1818,6 +1818,20 @@
       const shieldIcon = boss.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 0.95rem; font-weight: 700; box-shadow: 0 0 12px rgba(37,99,235,.5); z-index: 10;">Blindage</span>' : '';
       const shieldedClass = boss.shielded ? ' shielded' : '';
 
+      // Couleur de l'input (cohérent avec getHealthColor)
+      let inputColor;
+      if (percent === 0) {
+        inputColor = '#dc2626';
+      } else if (percent > 50) {
+        inputColor = '#22c55e';
+      } else if (percent > 25) {
+        inputColor = '#facc15';
+      } else if (percent > 10) {
+        inputColor = '#fb923c';
+      } else {
+        inputColor = '#ef4444';
+      }
+
       const content = document.getElementById('boss-view-content');
       content.innerHTML = `
         <div class="player-view-header">
@@ -1845,7 +1859,7 @@
               <button class="player-view-btn neg" onclick="updateBoss(${boss.id}, 'hp', 0); renderBossView();">☠️</button>
             </div>
             <div class="player-view-controls-hp">
-              <input class="player-view-btn pv-input" type="number" value="${boss.hp}" min="0" max="${boss.max}" onchange="updateBoss(${boss.id}, 'hp', parseInt(this.value)||0); renderBossView();" />
+              <input class="player-view-btn pv-input" type="number" value="${boss.hp}" min="0" max="${boss.max}" onchange="updateBoss(${boss.id}, 'hp', parseInt(this.value)||0); renderBossView();" style="color: ${inputColor};" />
             </div>
             <div class="player-view-controls-row">
               <button class="player-view-btn pos" onclick="changeBossHP(${boss.id}, 1); renderBossView();">+1</button>
@@ -1976,6 +1990,14 @@
       else if (percent > 10) return 'linear-gradient(90deg, #f97316, #fb923c)';
       else return 'linear-gradient(90deg, #dc2626, #ef4444)';
     }
+    function getHPTextColor(hp, max) {
+      if (hp === 0) return '#dc2626';
+      const percent = Math.round((hp / max) * 100);
+      if (percent > 50) return '#22c55e';
+      else if (percent > 25) return '#facc15';
+      else if (percent > 10) return '#fb923c';
+      else return '#ef4444';
+    }
     function getTextColor(percent) {
       if (percent > 50) return '#004d26';
       else if (percent > 25) return '#713f12';
@@ -2042,6 +2064,20 @@
       const shieldIcon = player.shielded ? '<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #2563eb; color: white; padding: 0.4rem 0.8rem; border-radius: 9999px; font-size: 0.95rem; font-weight: 700; box-shadow: 0 0 12px rgba(37,99,235,.5); z-index: 10;">Blindage</span>' : '';
       const shieldedClass = player.shielded ? ' shielded' : '';
 
+      // Couleur de l'input (cohérent avec getHealthColor)
+      let inputColor;
+      if (percent === 0) {
+        inputColor = '#dc2626';
+      } else if (percent > 50) {
+        inputColor = '#22c55e';
+      } else if (percent > 25) {
+        inputColor = '#facc15';
+      } else if (percent > 10) {
+        inputColor = '#fb923c';
+      } else {
+        inputColor = '#ef4444';
+      }
+
       const content = document.getElementById('player-view-content');
       content.innerHTML = `
         <div class="player-view-header">
@@ -2069,7 +2105,7 @@
               <button class="player-view-btn neg" onclick="setHP(${player.id}, 0); renderPlayerView();">☠️</button>
             </div>
             <div class="player-view-controls-hp">
-              <input class="player-view-btn pv-input" type="number" value="${player.hp}" min="0" max="${player.max}" onchange="setHP(${player.id}, parseInt(this.value)||0); renderPlayerView();" />
+              <input class="player-view-btn pv-input" type="number" value="${player.hp}" min="0" max="${player.max}" onchange="setHP(${player.id}, parseInt(this.value)||0); renderPlayerView();" style="color: ${inputColor};" />
             </div>
             <div class="player-view-controls-row">
               <button class="player-view-btn pos" onclick="changeHP(${player.id}, 1); renderPlayerView();">+1</button>
@@ -2399,9 +2435,10 @@
           historyList.innerHTML = '<div style="text-align: center; padding: 1rem; color: #9ca3af; font-size: 0.85rem;">Aucune action enregistrée</div>';
         } else {
           historyList.innerHTML = bossHistory.map(action => {
-            // Trouver le boss pour obtenir sa couleur
+            // Trouver le boss pour obtenir sa couleur et son max
             const boss = bosses.find(b => b.id === action.bossId);
             const enemyColor = boss?.color || '#7D7E7E';
+            const bossMax = boss?.max || 100;
             let nameColor;
             if (enemyColor.toUpperCase() === '#846BAF') {
               nameColor = '#b39ddb'; // Unique - violet
@@ -2414,10 +2451,13 @@
             // Générer le message selon le type
             let message, borderColor;
             if (action.type === 'death') {
-              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> est mort et passe de <strong>${action.oldHP}</strong> à <strong>0</strong> pv <span style="color: #fca5a5; font-weight: 600;">(-${action.oldHP} pv)</span>`;
+              const oldColor = getHPTextColor(action.oldHP, bossMax);
+              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> est mort et passe de <strong style="color: ${oldColor};">${action.oldHP}</strong> à <strong style="color: #dc2626;">0</strong> pv <span style="color: #fca5a5; font-weight: 600;">(-${action.oldHP} pv)</span>`;
               borderColor = '#dc2626';
             } else if (action.type === 'full_heal') {
-              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> récupère tous ses PV (<strong>${action.oldHP}</strong> → <strong>${action.newHP}</strong>)`;
+              const oldColor = getHPTextColor(action.oldHP, bossMax);
+              const newColor = getHPTextColor(action.newHP, bossMax);
+              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> récupère tous ses PV (<strong style="color: ${oldColor};">${action.oldHP}</strong> → <strong style="color: ${newColor};">${action.newHP}</strong>)`;
               borderColor = '#22c55e';
             } else if (action.type === 'shield_on') {
               message = `<strong style="color: ${nameColor};">${action.bossName}</strong> active son <strong style="color: #2563eb;">blindage</strong>`;
@@ -2440,7 +2480,9 @@
               // damage ou heal
               const deltaText = action.delta > 0 ? `(+${action.delta} pv)` : `(${action.delta} pv)`;
               const deltaColor = action.delta > 0 ? '#86efac' : '#fca5a5';
-              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> passe de <strong>${action.oldHP}</strong> à <strong>${action.newHP}</strong> pv <span style="color: ${deltaColor}; font-weight: 600;">${deltaText}</span>`;
+              const oldColor = getHPTextColor(action.oldHP, bossMax);
+              const newColor = getHPTextColor(action.newHP, bossMax);
+              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> passe de <strong style="color: ${oldColor};">${action.oldHP}</strong> à <strong style="color: ${newColor};">${action.newHP}</strong> pv <span style="color: ${deltaColor}; font-weight: 600;">${deltaText}</span>`;
               borderColor = action.delta > 0 ? '#86efac' : '#fca5a5';
             }
 
@@ -2467,18 +2509,22 @@
           playerHistoryList.innerHTML = '<div style="text-align: center; padding: 1rem; color: #9ca3af; font-size: 0.85rem;">Aucune action enregistrée</div>';
         } else {
           playerHistoryList.innerHTML = playerHistory.map(action => {
-            // Trouver le joueur pour obtenir sa couleur
+            // Trouver le joueur pour obtenir sa couleur et son max
             const player = players.find(p => p.id === action.playerId);
             const playerColor = player?.color || '#22c55e';
+            const playerMax = player?.max || 100;
 
             // Générer le message selon le type
             let message, borderColor;
             if (action.type === 'death') {
-              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> est mort et passe de <strong>${action.oldHP}</strong> à <strong>0</strong> pv <span style="color: #fca5a5; font-weight: 600;">(-${action.oldHP} pv)</span>`;
+              const oldColor = getHPTextColor(action.oldHP, playerMax);
+              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> est mort et passe de <strong style="color: ${oldColor};">${action.oldHP}</strong> à <strong style="color: #dc2626;">0</strong> pv <span style="color: #fca5a5; font-weight: 600;">(-${action.oldHP} pv)</span>`;
               borderColor = '#dc2626';
             } else if (action.type === 'full_heal') {
               const healAmount = action.newHP - action.oldHP;
-              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> récupère tous ses PV et passe de <strong>${action.oldHP}</strong> à <strong>${action.newHP}</strong> pv <span style="color: #86efac; font-weight: 600;">(+${healAmount} pv)</span>`;
+              const oldColor = getHPTextColor(action.oldHP, playerMax);
+              const newColor = getHPTextColor(action.newHP, playerMax);
+              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> récupère tous ses PV et passe de <strong style="color: ${oldColor};">${action.oldHP}</strong> à <strong style="color: ${newColor};">${action.newHP}</strong> pv <span style="color: #86efac; font-weight: 600;">(+${healAmount} pv)</span>`;
               borderColor = '#22c55e';
             } else if (action.type === 'shield_on') {
               message = `<strong style="color: ${playerColor};">${action.playerName}</strong> active son <strong style="color: #2563eb;">blindage</strong>`;
@@ -2501,7 +2547,9 @@
               // damage ou heal
               const deltaText = action.delta > 0 ? `(+${action.delta} pv)` : `(${action.delta} pv)`;
               const deltaColor = action.delta > 0 ? '#86efac' : '#fca5a5';
-              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> passe de <strong>${action.oldHP}</strong> à <strong>${action.newHP}</strong> pv <span style="color: ${deltaColor}; font-weight: 600;">${deltaText}</span>`;
+              const oldColor = getHPTextColor(action.oldHP, playerMax);
+              const newColor = getHPTextColor(action.newHP, playerMax);
+              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> passe de <strong style="color: ${oldColor};">${action.oldHP}</strong> à <strong style="color: ${newColor};">${action.newHP}</strong> pv <span style="color: ${deltaColor}; font-weight: 600;">${deltaText}</span>`;
               borderColor = action.delta > 0 ? '#86efac' : '#fca5a5';
             }
 
