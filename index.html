@@ -2269,6 +2269,22 @@
         const percent = Math.round((p.hp / p.max) * 100);
         const docId = p._docId || String(p.id);
         const shieldedClass = p.shielded ? ' shielded' : (percent <= 10 && p.hp > 0 ? ' critical' : '');
+        const barColor = getHealthColor(percent);
+        // Extraire la couleur principale pour le texte
+        let inputColor = '#22c55e'; // Vert par défaut (100%)
+        if (percent === 0) {
+          inputColor = '#dc2626'; // Rouge mort
+        } else if (percent <= 10) {
+          inputColor = '#dc2626'; // Rouge critique
+        } else if (percent <= 25) {
+          inputColor = '#ef4444'; // Rouge 25%
+        } else if (percent <= 50) {
+          inputColor = '#fb923c'; // Orange 50%
+        } else if (percent <= 75) {
+          inputColor = '#fbbf24'; // Jaune 75%
+        } else if (percent < 100) {
+          inputColor = '#84cc16'; // Vert clair 90%
+        }
         return `
           <div class="edit-card${shieldedClass}" data-player-id="${p.id}">
             <div class="edit-header">
@@ -2295,7 +2311,7 @@
   <button class="key neg" onclick="changeHP(${p.id}, -10)" type="button" aria-label="Retirer 10 PV à ${p.name}">-10</button>
   <button class="key neg" onclick="changeHP(${p.id}, -5)" type="button" aria-label="Retirer 5 PV à ${p.name}">-5</button>
   <button class="key neg" onclick="changeHP(${p.id}, -1)" type="button" aria-label="Retirer 1 PV à ${p.name}">-1</button>
-  <input class="pv-center" type="number" value="${p.hp}" min="0" max="${p.max}" onchange="setHP(${p.id}, parseInt(this.value)||0)" aria-label="Points de vie de ${p.name}">
+  <input class="pv-center" type="number" value="${p.hp}" min="0" max="${p.max}" onchange="setHP(${p.id}, parseInt(this.value)||0)" aria-label="Points de vie de ${p.name}" style="color: ${inputColor};">
   <button class="key pos" onclick="changeHP(${p.id}, 1)" type="button" aria-label="Ajouter 1 PV à ${p.name}">+1</button>
   <button class="key pos" onclick="changeHP(${p.id}, 5)" type="button" aria-label="Ajouter 5 PV à ${p.name}">+5</button>
   <button class="key pos" onclick="changeHP(${p.id}, 10)" type="button" aria-label="Ajouter 10 PV à ${p.name}">+10</button>
