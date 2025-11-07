@@ -2270,20 +2270,18 @@
         const docId = p._docId || String(p.id);
         const shieldedClass = p.shielded ? ' shielded' : (percent <= 10 && p.hp > 0 ? ' critical' : '');
         const barColor = getHealthColor(percent);
-        // Extraire la couleur principale pour le texte
-        let inputColor = '#22c55e'; // Vert par défaut (100%)
+        // Extraire la couleur principale pour le texte (cohérent avec getHealthColor)
+        let inputColor;
         if (percent === 0) {
           inputColor = '#dc2626'; // Rouge mort
-        } else if (percent <= 10) {
-          inputColor = '#dc2626'; // Rouge critique
-        } else if (percent <= 25) {
-          inputColor = '#ef4444'; // Rouge 25%
-        } else if (percent <= 50) {
-          inputColor = '#fb923c'; // Orange 50%
-        } else if (percent <= 75) {
-          inputColor = '#fbbf24'; // Jaune 75%
-        } else if (percent < 100) {
-          inputColor = '#84cc16'; // Vert clair 90%
+        } else if (percent > 50) {
+          inputColor = '#22c55e'; // Vert (de gradient #10b981, #22c55e)
+        } else if (percent > 25) {
+          inputColor = '#facc15'; // Jaune (de gradient #eab308, #facc15)
+        } else if (percent > 10) {
+          inputColor = '#fb923c'; // Orange (de gradient #f97316, #fb923c)
+        } else {
+          inputColor = '#ef4444'; // Rouge (de gradient #dc2626, #ef4444)
         }
         return `
           <div class="edit-card${shieldedClass}" data-player-id="${p.id}">
