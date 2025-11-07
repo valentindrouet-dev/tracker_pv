@@ -331,16 +331,16 @@
       border-radius: 12px;
       font-size: 1.1rem;
       font-weight: 700;
-      background: linear-gradient(135deg, #3f3f3f, #525252);
-      border: 2px solid #78716c;
-      color: #d6d3d1;
+      background: linear-gradient(135deg, #5c2828, #7f3838);
+      border: 2px solid #a85a5a;
+      color: #d4a5a5;
       cursor: pointer;
       transition: all 0.2s;
     }
     .player-view-fire-btn:active {
-      background: linear-gradient(135deg, #525252, #6b7280);
-      border-color: #9ca3af;
-      box-shadow: 0 0 15px rgba(120, 113, 108, 0.3);
+      background: linear-gradient(135deg, #7f3838, #9f4848);
+      border-color: #c86a6a;
+      box-shadow: 0 0 15px rgba(220, 38, 38, 0.3);
     }
     .player-view-shield-btn {
       flex: 1;
@@ -348,9 +348,9 @@
       border-radius: 12px;
       font-size: 1.1rem;
       font-weight: 700;
-      background: #0f1419;
-      border: 2px solid var(--border);
-      color: #e5e7eb;
+      background: linear-gradient(135deg, #1e3a5f, #2d4a7c);
+      border: 2px solid #4a6fa5;
+      color: #a5b8d4;
       cursor: pointer;
       transition: all 0.2s;
     }
@@ -2269,23 +2269,8 @@
         const percent = Math.round((p.hp / p.max) * 100);
         const docId = p._docId || String(p.id);
         const shieldedClass = p.shielded ? ' shielded' : (percent <= 10 && p.hp > 0 ? ' critical' : '');
-        const barColor = getHealthColor(percent);
-        // Extraire les couleurs RGB du gradient pour créer un fond avec opacité
-        let bgColorStyle = '';
-        if (barColor.includes('gradient')) {
-          // C'est un gradient, on prend la couleur moyenne
-          if (percent > 60) {
-            bgColorStyle = 'background: rgba(34, 197, 94, 0.08);'; // Vert
-          } else if (percent > 30) {
-            bgColorStyle = 'background: rgba(251, 191, 36, 0.08);'; // Jaune/orange
-          } else {
-            bgColorStyle = 'background: rgba(239, 68, 68, 0.08);'; // Rouge
-          }
-        } else {
-          bgColorStyle = 'background: rgba(34, 197, 94, 0.08);'; // Vert par défaut
-        }
         return `
-          <div class="edit-card${shieldedClass}" data-player-id="${p.id}" style="${bgColorStyle}">
+          <div class="edit-card${shieldedClass}" data-player-id="${p.id}">
             <div class="edit-header">
               <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)" aria-label="Couleur de ${p.name}">
               <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" aria-label="Nom du joueur" />
