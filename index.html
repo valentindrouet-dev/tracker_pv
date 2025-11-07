@@ -1348,7 +1348,7 @@
             boss.shielded = false;
             addToBossHistory(boss.id, boss.name, 'shield_absorbed', oldHP, oldHP, Math.abs(delta));
             render();
-            showToast('🛡️ Blindage absorbe !', 'warning');
+            showToast('Blindage absorbe !', 'warning');
             return;
           }
           const newHP = Math.max(0, Math.min(boss.max, boss.hp + delta));
@@ -1369,7 +1369,7 @@
         if (data.shielded && delta < 0) {
           addToBossHistory(id, data.name, 'shield_absorbed', oldHP, oldHP, Math.abs(delta));
           bossesCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-          showToast('🛡️ Blindage absorbe !', 'warning');
+          showToast('Blindage absorbe !', 'warning');
           return;
         }
         const newHP = Math.max(0, Math.min(data.max, data.hp + delta));
@@ -1391,7 +1391,7 @@
             boss.shielded = false;
             addToBossHistory(boss.id, boss.name, 'shield_absorbed', oldHP, oldHP, 'death');
             render();
-            showToast('🛡️ Blindage absorbe !', 'warning');
+            showToast('Blindage absorbe !', 'warning');
             return;
           }
           boss.hp = 0;
@@ -1410,7 +1410,7 @@
         if (data.shielded) {
           addToBossHistory(id, data.name, 'shield_absorbed', oldHP, oldHP, 'death');
           bossesCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-          showToast('🛡️ Blindage absorbe !', 'warning');
+          showToast('Blindage absorbe !', 'warning');
           return;
         }
         addToBossHistory(id, data.name, 'death', oldHP, 0);
@@ -1728,7 +1728,7 @@
           </div>
 
           <button class="player-view-shield-btn ${boss.shielded ? 'active' : ''}" onclick="toggleBossShield(${boss.id}); renderBossView();">
-            🛡️ Blindage ${boss.shielded ? '(ACTIF)' : ''}
+            Blindage ${boss.shielded ? '(ACTIF)' : ''}
           </button>
         </div>
 
@@ -1749,7 +1749,7 @@
             player.shielded = false;
             addToPlayerHistory(player.id, player.name, 'shield_absorbed', oldHP, oldHP, Math.abs(delta));
             render();
-            showToast('🛡️ Blindage absorbe !', 'warning');
+            showToast('Blindage absorbe !', 'warning');
             return;
           }
           const newHP = Math.max(0, Math.min(player.max, player.hp + delta));
@@ -1770,7 +1770,7 @@
         if (p.shielded && delta < 0) {
           addToPlayerHistory(id, p.name, 'shield_absorbed', oldHP, oldHP, Math.abs(delta));
           await playersCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-          showToast('🛡️ Blindage absorbe !', 'warning');
+          showToast('Blindage absorbe !', 'warning');
           return;
         }
         const next = Math.max(0, Math.min(p.max, oldHP + delta));
@@ -1792,7 +1792,7 @@
             const damageAvoided = newHP === 0 ? 'death' : oldHP - newHP;
             addToPlayerHistory(player.id, player.name, 'shield_absorbed', oldHP, oldHP, damageAvoided);
             render();
-            showToast('🛡️ Blindage absorbe !', 'warning');
+            showToast('Blindage absorbe !', 'warning');
             return;
           }
           player.hp = newHP;
@@ -1820,7 +1820,7 @@
           const damageAvoided = clamped === 0 ? 'death' : oldHP - clamped;
           addToPlayerHistory(id, p.name, 'shield_absorbed', oldHP, oldHP, damageAvoided);
           await playersCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
-          showToast('🛡️ Blindage absorbe !', 'warning');
+          showToast('Blindage absorbe !', 'warning');
           return;
         }
         // Déterminer le type d'événement
@@ -1947,7 +1947,7 @@
           </div>
 
           <button class="player-view-shield-btn ${player.shielded ? 'active' : ''}" onclick="toggleShield(${player.id}); renderPlayerView();">
-            🛡️ Blindage ${player.shielded ? '(ACTIF)' : ''}
+            Blindage ${player.shielded ? '(ACTIF)' : ''}
           </button>
         </div>
 
@@ -2123,7 +2123,7 @@
               <input class="color-pick" type="color" value="${p.color}" onchange="updatePlayer(${p.id}, 'color', this.value)" aria-label="Couleur de ${p.name}">
               <input class="edit-name" value="${p.name}" onchange="updatePlayer(${p.id}, 'name', this.value)" aria-label="Nom du joueur" />
               <button class="shield-btn ${p.shielded ? 'active' : ''}" type="button" onclick="toggleShield(${p.id})" aria-label="Activer/Désactiver le blindage de ${p.name}">
-                🛡️ Blindage
+                Blindage
               </button>
               <div class="inline-field">
                 <label>Max</label>
@@ -2187,7 +2187,7 @@
               </select>
               <input class="edit-name" value="${b.name}" onchange="updateBoss(${b.id}, 'name', this.value)" aria-label="Nom de l'ennemi" placeholder="Nom de l'ennemi" style="color: ${nameColor}; font-weight: 700;" />
               <button class="shield-btn ${b.shielded ? 'active' : ''}" type="button" onclick="toggleBossShield(${b.id})" aria-label="Activer/Désactiver le blindage de ${b.name}">
-                🛡️ Blindage
+                Blindage
               </button>
               <div class="inline-field">
                 <label>Max</label>
@@ -2248,16 +2248,16 @@
               message = `<strong style="color: ${nameColor};">${action.bossName}</strong> récupère tous ses PV (<strong>${action.oldHP}</strong> → <strong>${action.newHP}</strong>)`;
               borderColor = '#22c55e';
             } else if (action.type === 'shield_on') {
-              message = `🛡️ <strong style="color: ${nameColor};">${action.bossName}</strong> active son blindage`;
+              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> active son blindage`;
               borderColor = '#2563eb';
             } else if (action.type === 'shield_off') {
               message = `<strong style="color: ${nameColor};">${action.bossName}</strong> perd son blindage`;
               borderColor = '#9ca3af';
             } else if (action.type === 'shield_absorbed') {
               if (action.damageAvoided === 'death') {
-                message = `🛡️ <strong style="color: ${nameColor};">${action.bossName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite la mort`;
+                message = `<strong style="color: ${nameColor};">${action.bossName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite la mort`;
               } else {
-                message = `🛡️ <strong style="color: ${nameColor};">${action.bossName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite de perdre <span style="color: #fca5a5; font-weight: 600;">-${action.damageAvoided} pv</span>`;
+                message = `<strong style="color: ${nameColor};">${action.bossName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite de perdre <span style="color: #fca5a5; font-weight: 600;">-${action.damageAvoided} pv</span>`;
               }
               borderColor = '#2563eb';
             } else {
@@ -2305,16 +2305,16 @@
               message = `<strong style="color: ${playerColor};">${action.playerName}</strong> récupère tous ses PV et passe de <strong>${action.oldHP}</strong> à <strong>${action.newHP}</strong> pv <span style="color: #86efac; font-weight: 600;">(+${healAmount} pv)</span>`;
               borderColor = '#22c55e';
             } else if (action.type === 'shield_on') {
-              message = `🛡️ <strong style="color: ${playerColor};">${action.playerName}</strong> active son blindage`;
+              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> active son blindage`;
               borderColor = '#2563eb';
             } else if (action.type === 'shield_off') {
               message = `<strong style="color: ${playerColor};">${action.playerName}</strong> perd son blindage`;
               borderColor = '#9ca3af';
             } else if (action.type === 'shield_absorbed') {
               if (action.damageAvoided === 'death') {
-                message = `🛡️ <strong style="color: ${playerColor};">${action.playerName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite la mort`;
+                message = `<strong style="color: ${playerColor};">${action.playerName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite la mort`;
               } else {
-                message = `🛡️ <strong style="color: ${playerColor};">${action.playerName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite de perdre <span style="color: #fca5a5; font-weight: 600;">-${action.damageAvoided} pv</span>`;
+                message = `<strong style="color: ${playerColor};">${action.playerName}</strong> perd son <strong style="color: #2563eb;">blindage</strong> et évite de perdre <span style="color: #fca5a5; font-weight: 600;">-${action.damageAvoided} pv</span>`;
               }
               borderColor = '#2563eb';
             } else {
