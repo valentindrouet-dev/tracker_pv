@@ -1346,6 +1346,7 @@
           // Si blindage actif et dégâts négatifs → désactiver blindage au lieu de perdre HP
           if (boss.shielded && delta < 0) {
             boss.shielded = false;
+            addToBossHistory(boss.id, boss.name, 'shield_absorbed', oldHP, oldHP, Math.abs(delta));
             render();
             showToast('🛡️ Blindage absorbe !', 'warning');
             return;
@@ -1366,6 +1367,7 @@
         const oldShielded = data.shielded;
         // Si blindage actif et dégâts négatifs → désactiver blindage au lieu de perdre HP
         if (data.shielded && delta < 0) {
+          addToBossHistory(id, data.name, 'shield_absorbed', oldHP, oldHP, Math.abs(delta));
           bossesCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
           showToast('🛡️ Blindage absorbe !', 'warning');
           return;
@@ -1387,6 +1389,7 @@
           // Si blindage actif → désactiver blindage au lieu de tuer
           if (boss.shielded) {
             boss.shielded = false;
+            addToBossHistory(boss.id, boss.name, 'shield_absorbed', oldHP, oldHP, 'death');
             render();
             showToast('🛡️ Blindage absorbe !', 'warning');
             return;
@@ -1405,6 +1408,7 @@
         const oldShielded = data.shielded;
         // Si blindage actif → désactiver blindage au lieu de tuer
         if (data.shielded) {
+          addToBossHistory(id, data.name, 'shield_absorbed', oldHP, oldHP, 'death');
           bossesCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
           showToast('🛡️ Blindage absorbe !', 'warning');
           return;
@@ -1462,7 +1466,7 @@
     }
 
     // === HISTORIQUE DES ACTIONS ===
-    function addToBossHistory(bossId, bossName, type, oldHP = null, newHP = null) {
+    function addToBossHistory(bossId, bossName, type, oldHP = null, newHP = null, damageAvoided = null) {
       const now = new Date();
       const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
       const timestamp = now.getTime();
@@ -1511,10 +1515,11 @@
         time: time,
         bossId: bossId,
         bossName: bossName,
-        type: type, // damage, heal, shield_on, shield_off, death, full_heal
+        type: type, // damage, heal, shield_on, shield_off, death, full_heal, shield_absorbed
         oldHP: oldHP,
         newHP: newHP,
-        delta: delta
+        delta: delta,
+        damageAvoided: damageAvoided
       };
 
       bossHistory.unshift(action);
@@ -1523,7 +1528,7 @@
       render();
     }
 
-    function addToPlayerHistory(playerId, playerName, type, oldHP = null, newHP = null) {
+    function addToPlayerHistory(playerId, playerName, type, oldHP = null, newHP = null, damageAvoided = null) {
       const now = new Date();
       const time = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
       const timestamp = now.getTime();
@@ -1572,10 +1577,11 @@
         time: time,
         playerId: playerId,
         playerName: playerName,
-        type: type, // damage, heal, shield_on, shield_off, death, full_heal
+        type: type, // damage, heal, shield_on, shield_off, death, full_heal, shield_absorbed
         oldHP: oldHP,
         newHP: newHP,
-        delta: delta
+        delta: delta,
+        damageAvoided: damageAvoided
       };
 
       playerHistory.unshift(action);
@@ -1741,6 +1747,7 @@
           // Si blindage actif et dégâts négatifs → désactiver blindage au lieu de perdre HP
           if (player.shielded && delta < 0) {
             player.shielded = false;
+            addToPlayerHistory(player.id, player.name, 'shield_absorbed', oldHP, oldHP, Math.abs(delta));
             render();
             showToast('🛡️ Blindage absorbe !', 'warning');
             return;
@@ -1761,6 +1768,7 @@
         const oldHP = p.hp || 0;
         // Si blindage actif et dégâts négatifs → désactiver blindage au lieu de perdre HP
         if (p.shielded && delta < 0) {
+          addToPlayerHistory(id, p.name, 'shield_absorbed', oldHP, oldHP, Math.abs(delta));
           await playersCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
           showToast('🛡️ Blindage absorbe !', 'warning');
           return;
@@ -1781,6 +1789,8 @@
           // Si blindage actif et qu'on tente de réduire les HP → désactiver blindage
           if (player.shielded && newHP < oldHP) {
             player.shielded = false;
+            const damageAvoided = newHP === 0 ? 'death' : oldHP - newHP;
+            addToPlayerHistory(player.id, player.name, 'shield_absorbed', oldHP, oldHP, damageAvoided);
             render();
             showToast('🛡️ Blindage absorbe !', 'warning');
             return;
@@ -1807,6 +1817,8 @@
         const clamped = Math.max(0, Math.min(max, Number(value) || 0));
         // Si blindage actif et qu'on tente de réduire les HP → désactiver blindage
         if (p?.shielded && clamped < oldHP) {
+          const damageAvoided = clamped === 0 ? 'death' : oldHP - clamped;
+          addToPlayerHistory(id, p.name, 'shield_absorbed', oldHP, oldHP, damageAvoided);
           await playersCol.doc(String(id)).set({ shielded: false, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
           showToast('🛡️ Blindage absorbe !', 'warning');
           return;
@@ -2241,6 +2253,13 @@
             } else if (action.type === 'shield_off') {
               message = `<strong style="color: ${nameColor};">${action.bossName}</strong> perd son blindage`;
               borderColor = '#9ca3af';
+            } else if (action.type === 'shield_absorbed') {
+              if (action.damageAvoided === 'death') {
+                message = `🛡️ <strong style="color: ${nameColor};">${action.bossName}</strong> perd son blindage et évite la mort`;
+              } else {
+                message = `🛡️ <strong style="color: ${nameColor};">${action.bossName}</strong> perd son blindage et évite de subir <strong>${action.damageAvoided}</strong> dégâts`;
+              }
+              borderColor = '#2563eb';
             } else {
               // damage ou heal
               const deltaText = action.delta > 0 ? `(+${action.delta} pv)` : `(${action.delta} pv)`;
@@ -2291,6 +2310,13 @@
             } else if (action.type === 'shield_off') {
               message = `<strong style="color: ${playerColor};">${action.playerName}</strong> perd son blindage`;
               borderColor = '#9ca3af';
+            } else if (action.type === 'shield_absorbed') {
+              if (action.damageAvoided === 'death') {
+                message = `🛡️ <strong style="color: ${playerColor};">${action.playerName}</strong> perd son blindage et évite la mort`;
+              } else {
+                message = `🛡️ <strong style="color: ${playerColor};">${action.playerName}</strong> perd son blindage et évite de subir <strong>${action.damageAvoided}</strong> dégâts`;
+              }
+              borderColor = '#2563eb';
             } else {
               // damage ou heal
               const deltaText = action.delta > 0 ? `(+${action.delta} pv)` : `(${action.delta} pv)`;
