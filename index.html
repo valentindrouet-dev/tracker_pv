@@ -2248,10 +2248,10 @@
               message = `<strong style="color: ${nameColor};">${action.bossName}</strong> récupère tous ses PV (<strong>${action.oldHP}</strong> → <strong>${action.newHP}</strong>)`;
               borderColor = '#22c55e';
             } else if (action.type === 'shield_on') {
-              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> active son blindage`;
+              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> active son <strong style="color: #2563eb;">blindage</strong>`;
               borderColor = '#2563eb';
             } else if (action.type === 'shield_off') {
-              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> perd son blindage`;
+              message = `<strong style="color: ${nameColor};">${action.bossName}</strong> perd son <strong style="color: #2563eb;">blindage</strong>`;
               borderColor = '#9ca3af';
             } else if (action.type === 'shield_absorbed') {
               if (action.damageAvoided === 'death') {
@@ -2305,10 +2305,10 @@
               message = `<strong style="color: ${playerColor};">${action.playerName}</strong> récupère tous ses PV et passe de <strong>${action.oldHP}</strong> à <strong>${action.newHP}</strong> pv <span style="color: #86efac; font-weight: 600;">(+${healAmount} pv)</span>`;
               borderColor = '#22c55e';
             } else if (action.type === 'shield_on') {
-              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> active son blindage`;
+              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> active son <strong style="color: #2563eb;">blindage</strong>`;
               borderColor = '#2563eb';
             } else if (action.type === 'shield_off') {
-              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> perd son blindage`;
+              message = `<strong style="color: ${playerColor};">${action.playerName}</strong> perd son <strong style="color: #2563eb;">blindage</strong>`;
               borderColor = '#9ca3af';
             } else if (action.type === 'shield_absorbed') {
               if (action.damageAvoided === 'death') {
